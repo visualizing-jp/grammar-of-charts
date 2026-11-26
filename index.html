@@ -1,0 +1,1278 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>チャートの文法</title>
+<meta name="description" content="チャートを、背景（スペース変換）と前景（ビジュアル変換）の重なりとして読み解く教材。">
+<style>
+:root{
+  /* layout: one fixed 16:9 screen. Stage on the left (7), controls on the right (3), scene steps along the bottom. */
+  --paper:#ffffff;
+  --tile:#eef0f2;
+  --ink:#1b1c22;
+  --ink-2:#5c606b;
+  --rule:#d3d6db;
+  --navy:#3f4257;
+  --accent:#1487d8;
+  --pink:#e23a97;
+  --c-disease:#257de0;
+  --c-wounds:#ec4647;
+  --c-other:#4a4a4a;
+  --font:"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Noto Sans CJK JP","Yu Gothic UI","Yu Gothic",Meiryo,system-ui,sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none !important}
+html{height:100%;font-size:clamp(13px,1.15vw,24px)}
+body{height:100%;margin:0;background:var(--paper);color:var(--ink);font-family:var(--font);overflow:hidden;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto}
+
+.top{display:flex;align-items:baseline;gap:1.4rem;padding:.85rem 1.6rem .7rem;border-bottom:1px solid var(--rule)}
+.brand{font-size:.85rem;font-weight:700;color:var(--ink-2);white-space:nowrap}
+.caption{margin:0;font-size:1.7rem;font-weight:800;line-height:1.25;text-wrap:balance}
+.caption .no{color:var(--accent);margin-right:.55em;font-variant-numeric:tabular-nums}
+
+.main{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,3fr);min-height:0}
+.stage{min-width:0;min-height:0;display:flex;flex-direction:column;padding:.7rem 1rem .5rem 1.6rem}
+.stagehead{display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap;min-height:2.3rem}
+.stagehead h2{margin:0;font-size:1.45rem;font-weight:800}
+.stagehead p{margin:0;font-size:.85rem;color:var(--ink-2)}
+.svgbox{flex:1;min-height:0;position:relative}
+.svgbox svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+.panel{background:var(--tile);padding:1.1rem 1.2rem 1.2rem;display:flex;flex-direction:column;gap:1rem;min-height:0;overflow:auto}
+.panel h3{margin:0 0 .45rem;font-size:.85rem;font-weight:700;color:var(--ink-2);display:flex;align-items:center;gap:.5rem}
+.panel h3 svg{width:1.7rem;height:1.7rem;flex:none}
+.panel h3 b{color:var(--ink);font-size:1rem}
+
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem}
+.tile{background:var(--paper);border:2px solid transparent;border-radius:.4rem;padding:.25rem .25rem .3rem;display:flex;flex-direction:column;align-items:center;gap:.1rem;min-width:0}
+.tile svg{width:100%;aspect-ratio:1;max-height:5.6rem;display:block}
+.tile span{font-size:.72rem;line-height:1.2;color:var(--ink);font-weight:600;min-height:1.65rem;text-align:center;text-wrap:balance;display:flex;align-items:center}
+.tile:hover{border-color:var(--rule)}
+.tile[aria-pressed="true"]{border-color:var(--accent)}
+.tile[aria-pressed="true"] span{color:var(--ink);font-weight:700}
+
+.big{border:0;border-radius:.5rem;background:var(--navy);color:#fff;font-size:1.35rem;font-weight:800;padding:.85rem 1rem;display:flex;justify-content:center;align-items:baseline;gap:.8rem}
+.big kbd{font:inherit;font-size:.7rem;font-weight:600;opacity:.7;border:1px solid currentColor;border-radius:.25rem;padding:.05rem .4rem}
+.big:hover{background:#2f3246}
+
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:.35rem}
+.seg button{border:2px solid transparent;background:var(--paper);border-radius:.4rem;padding:.5rem .4rem;font-size:.95rem;font-weight:700}
+.seg button[aria-pressed="true"]{border-color:var(--accent)}
+.coord button{display:flex;flex-direction:column;align-items:center;gap:.15rem;padding:.5rem .4rem .55rem;font-size:1.05rem}
+.coord button svg{width:4.2rem;height:4.2rem}
+.coord button small{font-size:.75rem;font-weight:500;color:var(--ink-2)}
+/* slider: a point on a line, with no filled span from the minimum */
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:1.8rem;margin:.2rem 0 0;background:transparent;cursor:pointer}
+input[type=range]::-webkit-slider-runnable-track{height:2px;background:#9aa0aa;border-radius:1px}
+input[type=range]::-moz-range-track{height:2px;background:#9aa0aa;border-radius:1px}
+input[type=range]::-moz-range-progress{background:transparent}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:1.1rem;height:1.1rem;border-radius:50%;background:var(--accent);border:3px solid var(--tile);margin-top:calc(1px - .55rem)}
+input[type=range]::-moz-range-thumb{width:1.1rem;height:1.1rem;border-radius:50%;background:var(--accent);border:3px solid var(--tile);box-sizing:border-box}
+
+.legend{display:flex;flex-wrap:wrap;gap:.4rem .5rem;margin:0;padding:0;list-style:none}
+.legend li{display:flex;align-items:center;gap:.4rem;font-size:.9rem}
+.legend i{width:1rem;height:1rem;border-radius:.15rem;display:block}
+.chip{border:2px solid transparent;background:var(--paper);border-radius:2rem;padding:.22rem .7rem;font-size:.8rem}
+.chip[aria-pressed="true"]{border-color:var(--accent);font-weight:700}
+.note{margin:0;font-size:.78rem;line-height:1.5;color:var(--ink-2)}
+
+.foot{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.5rem 1.6rem;border-top:1px solid var(--rule)}
+.steps{display:flex;gap:.3rem;margin:0;padding:0;list-style:none;flex-wrap:wrap}
+.steps button{border:0;background:none;border-radius:2rem;padding:.3rem .8rem;font-size:.82rem;display:flex;gap:.45rem;align-items:baseline}
+.steps button b{font-variant-numeric:tabular-nums}
+.steps button[aria-current="step"]{background:var(--navy);color:#fff;font-weight:700}
+.steps button:disabled{color:#a3a7b0;cursor:default}
+.keys{font-size:.72rem;color:var(--ink-2);display:flex;gap:1rem;flex-wrap:wrap;justify-content:flex-end}
+.keys kbd{font:inherit;border:1px solid var(--rule);border-radius:.25rem;padding:0 .35rem;margin-right:.3rem;color:var(--ink)}
+
+#tip{position:fixed;left:0;top:0;z-index:10;pointer-events:none;background:var(--ink);color:#fff;border-radius:.35rem;padding:.4rem .6rem;font-size:.8rem;line-height:1.45;display:flex;flex-direction:column;max-width:22rem}
+#tip b{font-weight:700}
+
+/* SVG text and marks */
+svg text{font-family:var(--font);fill:var(--ink)}
+.t-tag{font-size:15px;fill:var(--ink-2);font-weight:600}
+.t-big{font-size:32px;font-weight:800}
+.t-res{font-size:30px;font-weight:800}
+.t-op{font-size:30px;font-weight:700;fill:var(--ink-2)}
+.t-ax{font-size:14px;fill:var(--ink-2);font-variant-numeric:tabular-nums}
+.t-axl{font-size:16px;font-weight:700}
+.layer{filter:drop-shadow(0 10px 12px rgba(27,28,34,.10))}
+.wedge{stroke:var(--paper);stroke-width:1.6;stroke-linejoin:round}
+.wedge:hover{filter:brightness(1.12)}
+.ring{fill:none;stroke:#dfe2e6;stroke-width:1}
+.base{fill:none;stroke:#9aa0aa;stroke-width:1.5}
+.yl{fill:none;stroke:var(--ink);stroke-width:1.3;stroke-linejoin:round;stroke-linecap:round;opacity:.3}
+.yl.dim{opacity:.1}
+.yl.on{stroke:var(--accent);stroke-width:2.4;opacity:.95}
+.yl.hot{stroke:var(--pink);stroke-width:3;opacity:1}
+.yhit{fill:none;stroke:transparent;stroke-width:12;pointer-events:stroke}
+
+/* scenes 1-3 */
+.t-sub{font-size:15px;fill:var(--ink-2)}
+.t-link{font-size:15px;font-weight:700;fill:var(--ink-2);text-decoration:underline;cursor:pointer}
+.t-link:hover{fill:var(--ink)}
+.lab-fg .sw{fill:var(--accent)}
+.lab-bg .sw{fill:var(--ink)}
+/* scene 1 colours the foreground so the two layers read apart even when stacked */
+.fgc [fill="var(--ink)"]{fill:var(--accent)}
+.fgc [stroke="var(--ink)"]{stroke:var(--accent)}
+.t-cap{font-size:22px;fill:var(--ink-2);font-weight:600;font-variant-numeric:tabular-nums}
+.t-row{font-size:19px;font-weight:700;fill:var(--ink-2)}
+.t-na{font-size:44px;font-weight:800;fill:#a3a7b0}
+.t-city{font-size:17px;font-weight:800;paint-order:stroke;stroke:var(--paper);stroke-width:5px;stroke-linejoin:round}
+.drag{cursor:ns-resize;touch-action:none}
+.pic button{display:flex;flex-direction:column;align-items:center;gap:.2rem;padding:.4rem .4rem .5rem}
+.pic button svg{width:100%;max-width:8rem;aspect-ratio:1}
+.mx{display:grid;grid-template-columns:auto repeat(5,minmax(0,1fr));gap:.3rem}
+.mx .ch{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:.15rem;font-size:.6rem;font-weight:700;letter-spacing:-.04em;white-space:nowrap;min-width:0}
+.mx .ch svg,.mx .ch img{width:72%;aspect-ratio:1;object-fit:contain;display:block}
+.mx .rh{display:flex;align-items:center;justify-content:flex-end;font-size:.72rem;font-weight:700;padding-right:.3rem;white-space:nowrap}
+.cell{aspect-ratio:1;background:var(--paper);border:2px solid transparent;border-radius:.3rem;padding:0;display:grid;place-items:center;min-width:0;overflow:hidden}
+.cell svg,.cell img{width:100%;height:100%;display:block;object-fit:contain}
+.cell small{font-size:.55rem;color:#a3a7b0;font-weight:700;white-space:nowrap}
+.cell.new{background:#f8f9fa}
+.cell:hover{border-color:var(--rule)}
+.cell[aria-pressed="true"]{border-color:var(--accent)}
+.node{stroke:var(--paper);stroke-width:2}
+.link{stroke:var(--ink-2);stroke-width:1.6}
+
+/* phone and narrow windows: stack, and let the page scroll */
+@media (max-width:760px){
+  html{font-size:15px}
+  body{overflow:auto}
+  .app{height:auto;min-height:100%}
+  .top{flex-direction:column;gap:.2rem;padding:.7rem 1rem}
+  .caption{font-size:1.2rem}
+  .main{grid-template-columns:1fr}
+  .stage{padding:.6rem .6rem .4rem}
+  .svgbox{flex:none;aspect-ratio:1000/620}
+  .foot{flex-direction:column;align-items:flex-start;padding:.6rem 1rem}
+  .keys{display:none}
+  .drag{touch-action:auto;cursor:default}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <span class="brand">チャートの文法</span>
+    <p class="caption" id="caption"></p>
+  </header>
+
+  <!-- 場面1：はがす -->
+  <main class="main" data-scene="1">
+    <section class="stage" aria-label="ステージ">
+      <div class="svgbox"><svg id="svg1" class="drag" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="重なった2枚のレイヤー"></svg></div>
+    </section>
+    <aside class="panel" id="panel1">
+      <button class="big" id="act1" type="button"><span id="act1label">はがす</span><kbd>Space</kbd></button>
+      <div class="seg pic" id="mode1">
+        <button type="button" data-mode="anime" aria-pressed="true"><svg viewBox="-170 -170 340 340" aria-hidden="true"></svg>アニメ</button>
+        <button type="button" data-mode="chart" aria-pressed="false"><svg viewBox="-170 -170 340 340" aria-hidden="true"></svg>チャート</button>
+      </div>
+      <p class="note" id="note1"></p>
+    </aside>
+  </main>
+
+  <!-- 場面2：前景をつくる -->
+  <main class="main" data-scene="2" hidden>
+    <section class="stage" aria-label="ステージ">
+      <div class="stagehead"><h2 id="name2"></h2><p id="sub2"></p></div>
+      <div class="svgbox"><svg id="svg2" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="図形記号と知覚チャンネルの組み合わせ"></svg></div>
+    </section>
+    <aside class="panel" id="panel2">
+      <div class="mx" id="mx2"></div>
+      <p class="note" id="note2"></p>
+    </aside>
+  </main>
+
+  <!-- 場面3：背景をえらぶ -->
+  <main class="main" data-scene="3" hidden>
+    <section class="stage" aria-label="ステージ">
+      <div class="stagehead"><h2 id="name3"></h2><p id="sub3"></p></div>
+      <div class="svgbox"><svg id="svg3" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="同じ点を4つの座標系に置く"></svg></div>
+    </section>
+    <aside class="panel" id="panel3">
+      <div class="seg coord" id="sys3"></div>
+      <p class="note" id="note3"></p>
+    </aside>
+  </main>
+
+  <!-- 場面4：かさねる -->
+  <main class="main" data-scene="4" hidden>
+    <section class="stage" aria-label="ステージ">
+      <div class="svgbox"><svg id="svg4" class="drag" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="背景と前景のレイヤー"></svg></div>
+    </section>
+    <aside class="panel" id="panel4">
+      <button class="big" id="act4" type="button"><span id="act4label">かさねる</span><kbd>Space</kbd></button>
+      <div id="tiles4"></div>
+    </aside>
+  </main>
+
+  <!-- 場面5：背景だけ替える -->
+  <main class="main" data-scene="5" hidden>
+    <section class="stage" aria-label="ステージ">
+      <div class="stagehead"><h2 id="name5"></h2><p id="sub5"></p></div>
+      <div class="svgbox"><svg id="svg5" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="同じデータを直交座標系と極座標系で描く"></svg></div>
+    </section>
+    <aside class="panel" id="panel5">
+      <div>
+        <h3>データ</h3>
+        <div class="seg" id="ds5">
+          <button type="button" data-ds="night" aria-pressed="true">ナイチンゲール</button>
+          <button type="button" data-ds="yogurt" aria-pressed="false">ヨーグルト</button>
+        </div>
+      </div>
+      <div>
+        <h3>背景</h3>
+        <div class="seg coord" id="coord5">
+          <button type="button" data-to="0" aria-pressed="true"><svg viewBox="-150 -150 300 300" data-bg="cart" aria-hidden="true"></svg>直交座標系<small>たて・よこ</small></button>
+          <button type="button" data-to="1" aria-pressed="false"><svg viewBox="-150 -150 300 300" data-bg="polar" aria-hidden="true"></svg>極座標系<small>むき・きょり</small></button>
+        </div>
+        <input type="range" id="scrub5" min="0" max="1000" value="0" aria-label="直交座標系から極座標系へ">
+      </div>
+      <div>
+        <h3 id="lg5title"></h3>
+        <ul class="legend" id="legend5"></ul>
+      </div>
+      <p class="note" id="note5"></p>
+    </aside>
+  </main>
+
+  <footer class="foot">
+    <ol class="steps" id="steps"></ol>
+    <div class="keys"><span><kbd>←</kbd><kbd>→</kbd>場面</span><span><kbd>↑</kbd><kbd>↓</kbd><span id="kud"></span></span><span><kbd>Space</kbd><span id="ksp"></span></span></div>
+  </footer>
+</div>
+<div id="tip" hidden></div>
+
+<!-- ============================================================
+  データ：ここを差し替える。
+  ヨーグルト：タブ区切り。1行目が見出し。使う列は下の YOGURT_AXES で指定。
+  ナイチンゲール：カンマ区切り。12か月ごとに1つの円になる。
+============================================================ -->
+<script type="text/plain" id="data-yogurt">
+名称	メーカー	indexid	容量(g)	エネルギー(kcal)	たんぱく質(g)	脂質(g)	炭水化物(g)	ナトリウム(mg)	カルシウム(mg)	糖類(g)	ラクトフェリン(mg)	食物繊維(g)	ガラクトオリゴ糖(g)	鉄(mg)	葉酸(μg)	カルシウム(mg)	オルチニン(mg)
+明治ブルガリアヨーグルトLB81 低糖 180g	明治	73	180	144	6.2	5.5	17.5	78	216	17.5	0	0	0	0	0	0	0
+明治ブルガリアヨーグルト脂肪0 苺 180g	明治	72	180	121	7.4	0	22.8	79	232	0	0	0	0	0	0	0	0
+明治ブルガリアヨーグルト脂肪0 ブルーベリー 180g	明治	71	180	120	7.7	0	22.4	90	220	0	0	0	0	0	0	0	0
+明治ブルガリアヨーグルト脂肪0白桃 180g	明治	70	180	119	7.6	0	22.1	87	218	0	0	0	0	0	0	0	0
+明治ブルガリアヨーグルト脂肪0 朝のフルーツミックスアロエプラス 180g	明治	69	180	117	7.8	0	21.5	89	229	0	0	0	0	0	0	0	0
+明治プロビオヨーグルトLG21	明治	68	112	89	3.8	3.4	10.9	49	134	0	0	0	0	0	0	0	0
+明治プロビオヨーグルトLG21低脂肪112g	明治	67	112	72	4.1	1.6	10.3	59	148	0	0	0	0	0	0	0	0
+明治プロビオヨーグルトLG21 砂糖0 112g	明治	66	112	56	4	1.6	10.6	56	135	0	0	0.9	0	0	0	0	0
+明治プロビオヨーグルトLG21 アロエ脂肪0 112g	明治	65	112	68	3.9	0	13.1	57	125	0	0	0	0	0	0	0	0
+明治ヨーグルトR-1	明治	64	112	89	3.9	3.4	10.8	52	138	0	0	0	0	0	0	0	0
+明治ヨーグルトR-1 ブルーベリー脂肪0 112g	明治	63	100	68	4.4	0	12.5	71	132	0	0	0	0	0	0	0	0
+明治ヨーグルトR-1 低脂肪112g	明治	62	112	72	4.2	1.6	10.3	52	139	0	0	0	0	0	0	0	0
+ラクトフェリンヨーグルト	森永	61	112	100	5.1	3	13.1	55	150	0	100	0	0	0	0	0	0
+濃密ギリシャヨーグルト PARTHENOはちみつ付	森永	60	90	108	7.9	3.8	11.3	26	81	0	0	0	0	0	0	0	0
+濃密ギリシャヨーグルト PARTHENOグリーンアップルソース付	森永	59	90	107	0	3.8	10.4	34	81	0	0	0	0	0	0	0	0
+濃密ギリシャヨーグルト PARTHENOラズベリーソース付	森永	58	90	106	0	3.8	10.2	28	81	0	0	0	0	0	0	0	0
+濃密ギリシャヨーグルト PARTHENOプレーン	森永	57	110	110	10.9	5.3	4.6	36	110	0	0	0	0	0	0	0	0
+Doubleiマンゴー	森永	56	90	88	3.8	1.9	13.8	53	95	0	0	0	0	0	0	0	0
+Doubleiブルーベリー	森永	55	90	86	3.8	1.8	13.6	54	95	0	0	0	0	0	0	0	0
+ビヒダスＢＢ５３６ プレーン加糖タイプ	森永	54	120	117	4.1	4.6	14.8	53	150	0	0	0	0	0	0	0	0
+森永アロエヨーグルト	森永	53	125	108	4.3	2.8	16.5	50	130	0	0	0	0	0	0	0	0
+森永大粒アロエ＆ヨーグルト	森永	52	140	115	3.7	2.5	19.3	52	120	0	0	0	0	0	0	0	0
+森永アロエヨーグルト ＋な素材 アセロラ＆クランベリー	森永	51	118	100	4.2	2.8	14.6	62	130	0	0	0	0	0	0	0	0
+森永アロエヨーグルト 脂肪0	森永	50	120	60	4.2	0	11.4	49	130	0	0	0	0	0	0	0	0
+カラダ強くするヨーグルト ラクトフェリンとビフィズス菌BB536	森永	49	100	93	3.4	3.6	11.7	42	110	0	100	0	0	0	0	0	0
+素材そのまま ブルーベリーのヨーグルト	森永	48	100	95	3.5	2.2	15.2	39	100	0	0	0	0	0	0	0	0
+素材そのまま マンゴーのヨーグルト	森永	47	100	88	3.4	2.2	13.6	38	100	0	0	0	0	0	0	0	0
+素材そのまま いちごのヨーグルト	森永	46	100	91	3.5	2.2	14.3	38	100	0	0	0	0	0	0	0	0
+これでフルーツ10種類ヨーグルト フルーツミックス	森永	45	220	132	7.8	0	23.4	90	250	0	0	0	0	0	0	0	0
+これでフルーツ10種類ヨーグルト 黄色のビタミンフルーツミックス	森永	44	220	126	8.2	0	22.6	110	250	0	0	0	0	0	0	0	0
+森永ヨーグルト	森永	43	100	99	3.5	3.9	12.4	44	130	0	0	0	0	0	0	0	0
+恵 megumi ガセリ菌SP株ヨーグルト 100g	雪印メグミルク	42	100	35	3.7	0	4.8	39	120	0	0	0	0	0	0	0	0
+恵 megumi ガセリ菌SP株ヨーグルト アロエ	雪印メグミルク	41	100	53	3.9	0	9	60	120	0	0	0	0	0	0	0	0
+恵 megumi ビフィズス菌SP株カプセルヨーグルト 100g	雪印メグミルク	40	100	81	3.8	1.7	12.6	51	110	0	0	0	0.21	0	0	0	0
+バニラヨーグルト	日本ルナ	39	100	111	3.6	4.1	14.9	60	104	0	0	0	0	0	0	0	0
+バニラヨーグルトシチリアレモン	日本ルナ	38	100	104	3.1	3.6	14.8	94	102	0	0	0	0	0	0	0	0
+バニラヨーグルト あまおう苺	日本ルナ	37	100	111	3.5	4.1	15	56	113	0	0	0	0	0	0	0	0
+ヨーグルト＆シリアル 玄米フレーク	日本ルナ	36	108	121	4.7	2.5	19.8	141	146	0	0	0	0	0	0	0	0
+ヨーグルト＆シリアル ライスチョコ	日本ルナ	35	107	116	4.6	2.3	19.2	106	164	0	0	0	0	0	0	0	0
+アサイーヨーグルトボウル	日本ルナ	34	110	99	4.2	1.7	16.7	92	101	0	0	0	0	0	0	0	0
+HN019ヨーグルト 豊富に食物センイ	日本ルナ	33	105	54	3.5	0.8	9	54	101	0	0	8.1	0	0	0	0	0
+さくさくパン×ドライフルーツヨーグルト	日本ルナ	32	121	158	5.2	4.3	24.5	107	112	0	0	0	0	0	0	0	0
+PIERRE HERME' ヨーグルト Envie	オハヨー乳業	31	120	179	4.7	7.2	24	89	130	0	0	0	0	0	0	0	0
+PIERRE HERME' ヨーグルト Infiniment Mandarine	オハヨー乳業	30	120	174	4.9	7.4	22	58	127	0	0	0	0	0	0	0	0
+甘熟　アップルマンゴーヨーグルト	オハヨー乳業	29	130	92	5.2	0	17.7	60	139	0	0	0	0	0	0	0	0
+季節の果実　キウイ＆ヨーグルト	オハヨー乳業	28	130	100	5	0	19.9	67	127	0	0	0	0	0	0	0	0
+贅沢果実　いちごヨーグルト	オハヨー乳業	27	130	112	5.1	2.1	18.2	61	138	0	0	0	0	0	0	0	0
+贅沢果実　ブルーベリーヨーグルト	オハヨー乳業	26	130	112	5.2	2.2	17.9	67	134	0	0	0	0	0	0	0	0
+Hanakoとコラボした生乳ヨーグルト	オハヨー乳業	25	100	93	3.6	3.9	10.8	44	117	0	0	0	0	0	0	0	0
+Hanakoとコラボした１日分の鉄分ヨーグルト	オハヨー乳業	24	110	87	4.2	1.3	14.5	89	0	0	0	0	0	11	300	132	0
+小岩井 生乳100％ヨーグルト 200g	小岩井乳業	23	200	130	6.4	7.6	9.2	92	220	0	0	0	0	0	0	0	0
+小岩井 プレミアムクリームヨーグルトグルメファン 130g	小岩井乳業	22	130	143	4.8	10.5	7.2	61	164	0	0	0	0	0	0	0	0
+小岩井 クリームヨーグルト クレマ 85g オレンジはちみつ入り	小岩井乳業	21	85	117	4.5	5.2	13.1	53	143	0	0	0	0	0	0	0	0
+小岩井 クリームヨーグルト クレマ 85g ピーチクリーム	小岩井乳業	20	85	119	4.5	5.2	13.5	50	143	0	0	0	0	0	0	0	0
+小岩井 大人の元気ヨーグルト 105g	小岩井乳業	19	105	79	3.8	2.2	10.6	44	109	0	0	0	0	0	0	0	400
+小岩井 金色ヨーグルト 120g	小岩井乳業	18	120	127	3.9	4.9	16.7	50	131	0	0	0	0	0	0	0	400
+小岩井 まきばヨーグルト こだわりクリーミー 95g	小岩井乳業	17	95	101	3.2	3.9	13.2	43	101	0	0	0	0	0	0	0	0
+増加型ビフィズス菌 ＬＫＭ512ヨーグルト	メイトー	15	100	85	3.8	2.2	12.7	49	120	0	0	0	0	0	0	0	0
+ドール アサイーミックス＆ヨーグルト	メイトー	14	190	118	6.7	0	22.7	96	209	0	0	0	0	0	0	0	0
+ドール マスカットミックス＆ヨーグルト	メイトー	13	190	117	4.9	0	24.3	129	154	0	0	0	0	0	0	0	0
+ドール フルーツミックス＆ヨーグルト	メイトー	12	200	126	7.1	0.2	24	113	183	0	0	0	0	0	0	0	0
+ドール ベリーミックス＆ヨーグルト	メイトー	11	200	126	6.7	0.2	24.4	94	210	0	0	0	0	0	0	0	0
+ドール マンゴーミックス＆ヨーグルト	メイトー	10	200	124	7	0	24.1	94	208	0	0	0	0	0	0	0	0
+ドール アロエミックス＆ヨーグルト	メイトー	9	200	126	6.9	0	24.2	109	181	0	0	0	0	0	0	0	0
+朝食BifiXヨーグルト	グリコ乳業	8	150	106	4.9	2.2	16.6	57	144	0	0	0	0	0	0	0	0
+朝食BifiXヨーグルト脂肪0	グリコ乳業	7	100	38	3.6	0	5.7	52	92	0	0	0	0	0	0	0	0
+朝食BifiXヨーグルト フルーツプルーン	グリコ乳業	6	145	122	5.4	2.6	19.3	60	160	0	0	0	0	0	0	0	0
+朝食りんごヨーグルト	グリコ乳業	5	145	123	5.4	2.5	19.7	63	148	0	0	0	0	0	0	0	0
+朝食みかん＆ヨーグルト	グリコ乳業	4	145	117	5	2.4	18.9	50	125	0	0	0	0	0	0	0	0
+ヨーグルト健康	グリコ乳業	3	125	126	4.3	2.6	21.4	62	173	0	0	0	0	0	0	0	0
+ドクターPiroヨーグルト 110g	グリコ乳業	2	110	93	4.2	2.3	13.8	48	92	0	0	0	0	0	0	0	0
+</script>
+<script type="text/plain" id="data-nightingale">date,disease,wounds,other
+1854-04,1,0,5
+1854-05,12,0,9
+1854-06,11,0,6
+1854-07,359,0,23
+1854-08,828,1,30
+1854-09,788,81,70
+1854-10,503,132,128
+1854-11,844,287,106
+1854-12,1725,114,131
+1855-01,2761,83,324
+1855-02,2120,42,361
+1855-03,1205,32,172
+1855-04,477,48,57
+1855-05,508,49,37
+1855-06,802,209,31
+1855-07,382,134,33
+1855-08,483,164,25
+1855-09,189,276,20
+1855-10,128,53,18
+1855-11,178,33,32
+1855-12,91,18,28
+1856-01,42,2,48
+1856-02,24,0,19
+1856-03,15,0,35</script>
+<!-- 場面3の陸地（Natural Earth 1:110m を間引いたもの。「経度,緯度」を空白で、輪郭を ; で区切る） -->
+<script type="text/plain" id="data-land">-67.8,-53.8 -65.1,-54.7 -68.1,-55.6 -72.3,-54.5 -74.7,-52.8 -71.1,-54.1 -69.3,-52.5 -67.8,-53.8;145.4,-40.8 148.3,-40.9 147.6,-42.9 146,-43.5 144.7,-41.2 145.4,-40.8;173,-40.9 174.2,-41.3 173.1,-43.9 168.4,-46.6 166.7,-46.2 167,-45.1 173,-40.9;174.6,-36.2 176.8,-37.9 178.5,-37.7 176,-41.3 175.1,-41.4 174.9,-39.9 173.8,-39.5 174.7,-37.4 172.6,-34.5 174.6,-36.2;-180,-16.6 178.7,-17 179.4,-16.4 -180,-16.6;50.1,-13.6 50.4,-15.7 49.7,-15.7 47.1,-24.9 45.4,-25.6 44,-25 43.4,-21.3 44.4,-20.1 44.4,-16.2 47.7,-14.6 49.2,-12 50.1,-13.6;143.6,-13.8 145.4,-15 146.4,-19 148.8,-20.4 153.1,-26.1 152.9,-31.6 149.4,-37.8 146.3,-39 145,-37.9 143.6,-38.8 140.6,-38 139.6,-36.1 138.1,-35.6 138.2,-34.4 136.8,-35.3 137.8,-32.9 136,-34.9 134.3,-32.6 131.3,-31.5 116.6,-35 115,-34.2 115.8,-32.2 114.6,-28.5 113.3,-26.1 114.2,-26.3 113.4,-24.4 114.1,-21.8 114.2,-22.5 116.7,-20.7 120.9,-19.7 123,-16.4 123.9,-17.1 123.5,-16.6 125.7,-14.2 127.1,-13.8 129.6,-15 130.6,-12.5 132.6,-12.1 131.8,-11.3 132.4,-11.1 135.3,-12.2 136.5,-11.9 137,-12.4 135.5,-15 140.2,-17.7 141.7,-15 142.1,-11 143.6,-13.8;108.6,-6.8 110.8,-6.5 115.7,-8.4 110.6,-8.1 105.4,-6.9 106.1,-5.9 108.6,-6.8;134.1,-1.2 134.4,-2.8 135.5,-3.4 138.3,-1.7 144.6,-3.9 147.6,-6.1 147.2,-7.4 148.7,-9.1 150.8,-10.3 147.9,-10.1 144.7,-7.6 142.6,-9.3 139.1,-8.1 137.6,-8.4 138.7,-7.3 137.9,-5.4 133.7,-3.5 133,-4.1 132,-2.8 133.7,-2.2 130.5,-0.9 132.4,-0.4 134.1,-1.2;125.2,1.4 123.7,0.2 120.2,0.2 120.9,-1.4 123.3,-0.6 121.5,-1.9 123.2,-5.3 122.2,-5.3 122.7,-4.5 121.5,-4.6 121,-2.6 120.3,-2.9 120.4,-5.5 119.4,-5.4 119.5,-3.5 118.8,-2.8 120,0.6 120.9,1.3 125.2,1.4;105.8,-5.9 102.6,-4.2 98.6,1.8 95.4,5 97.5,5.2 103.8,0.1 103.4,-0.7 106.1,-3.1 105.8,-5.9;117.9,1.8 119,0.9 117.8,0.8 116.1,-4 114.9,-4.1 113.3,-3.1 110.2,-2.9 109,0.4 109.7,2 110.4,1.7 113,3.1 116.7,6.9 119.2,5.4 117.3,3.2 117.9,1.8;126.4,8.4 125.4,5.6 124.2,6.2 123.6,7.8 122.8,7.5 122.1,6.9 122.3,8 125.5,9 125.4,9.8 126.4,8.4;121.3,18.5 122.2,18.5 122.5,17.1 121.7,14.3 124,13.8 124.1,12.5 123.3,13 120.6,13.9 121,14.5 120.1,15 119.9,16.4 121.3,18.5;-72.6,19.9 -68.3,18.6 -71,18.3 -71.4,17.6 -74.5,18.3 -72.3,18.7 -73.4,19.6 -72.6,19.9;-79.7,22.8 -74.2,20.3 -77.8,19.9 -77.1,20.4 -79.3,21.6 -81.8,22.6 -85,21.9 -82.3,23.2 -79.7,22.8;141,37.1 140.3,35.1 137.2,34.6 135.8,33.5 135.1,34.6 131,33.9 132,33.1 130.7,31 129.4,33.3 132.6,35.4 135.7,35.5 136.7,37.3 137.4,36.8 139.4,38.2 140.3,41.2 141.4,41.4 141.9,40 141,37.1;143.9,44.2 145.3,44.4 145.5,43.3 143.2,42 141.6,42.7 141.1,41.6 140,41.6 139.8,42.6 141.4,43.4 142,45.6 143.9,44.2;-56.1,50.7 -56.8,49.8 -53.1,48.7 -53.1,46.7 -54.2,46.8 -54.2,47.8 -55.4,46.9 -56.3,47.6 -59.3,47.6 -57.4,50.7 -55.9,51.6 -56.1,50.7;143.6,50.7 144.7,49 143.2,49.3 142.6,47.9 143.5,46.1 142.7,46.7 142.1,46 142.1,49.6 141.6,51.9 142.2,54.2 143.6,50.7;-6.8,52.3 -10,51.8 -9.2,52.9 -9.7,53.9 -7.6,55.1 -5.7,54.6 -6.8,52.3;-3,58.6 -4.1,57.6 -2,57.7 -3.1,56 1.7,52.7 1.4,51.3 -5.8,50.2 -3.4,51.4 -5.3,52 -4.2,52.3 -4.6,53.5 -2.9,54 -4.8,54.8 -5,55.8 -5.6,55.3 -6.2,56.8 -5,58.6 -3,58.6;-85.2,65.7 -80.1,63.7 -82.5,63.7 -87.2,63.5 -85.9,65.7 -85.2,65.7;-14.5,66.5 -14.7,65.8 -13.6,65.1 -18.7,63.5 -22.8,64 -21.8,64.4 -24,64.9 -22.2,65.1 -24.3,65.6 -23.7,66.3 -20.6,65.7 -14.5,66.5;-180,69 -174.3,66.3 -174.6,67.1 -171.9,66.9 -169.9,66 -172.5,65.4 -173,64.3 -178.4,65.4 -178.7,66.1 -179.9,65.9 -180,65 180,65 177.4,64.6 179.2,62.3 173.7,61.7 170.3,59.9 168.9,60.6 163.5,59.9 162,58.2 163.2,57.6 162.1,54.9 160.4,54.3 160,53.2 158.5,53 156.8,51 155.4,55.4 155.9,56.8 163.7,61.1 164.5,62.6 160.1,60.5 159.3,61.8 156.7,61.4 154.2,59.8 155,59.1 151.3,58.8 151.3,59.5 149.8,59.7 142.2,59 135.1,54.7 138.2,53.8 139.9,54.2 141.4,52.2 140.1,48.4 138.2,46.3 134.9,43.4 132.3,43.3 127.5,39.8 129.5,36.8 129.1,35.1 126.5,34.4 126.1,36.7 126.9,36.9 124.7,38.1 125.3,39.6 121.1,38.9 122.2,40.4 121.6,40.9 118,39.2 117.5,38.7 118.9,37.4 122.4,37.5 119.2,34.9 121.9,31.7 121.3,30.7 122.1,29.8 121.7,28.2 118.7,24.5 115.9,22.8 110.8,21.4 110.4,20.3 108.5,21.7 105.9,19.8 109.3,13.4 109.2,11.7 105.2,8.6 105.1,9.9 100.1,13.4 99.2,9.2 103,5.5 104.2,1.3 101.4,2.8 100.1,6.5 98.5,8.4 98.3,7.8 98.8,11.4 97.2,16.9 95.4,15.7 94.2,16 94.3,18.2 91.4,22.8 90.5,22.8 90.3,21.8 87,21.5 86.5,20.2 80.3,15.9 79.9,10.4 77.5,8 73.5,16 72.6,21.4 70.5,20.9 66.4,25.4 57.4,25.7 56.5,27.1 54.7,26.5 51.5,27.9 50.1,30.1 48,30 50.8,24.8 51,26 51.6,25.8 51.8,24 54,24.1 56.4,26.4 56.8,24.2 59.8,22.3 57.8,20.2 57.7,18.9 55.3,17.2 48.7,14 43.5,12.6 42.7,16.8 39.1,21.3 38.5,23.7 34.6,28.1 34.9,29.5 33.9,27.6 32.4,29.9 35.5,23.1 36.9,22 37.5,18.6 43.3,12.4 42.7,11.7 44.6,10.4 51.1,12 51,10.6 47.7,4.2 40.3,-2.6 39.2,-4.7 39.2,-8.5 40.5,-10.8 40.8,-14.7 40.1,-16.1 34.8,-19.8 35.5,-24.1 32.6,-25.7 32.5,-28.3 30.1,-31.1 25.8,-33.9 19.6,-34.8 18.2,-33.9 18.2,-31.7 15.2,-27.1 14.3,-22.1 11.8,-18.1 12.2,-14.4 13.6,-12 13.2,-8.6 11.9,-5 8.8,-1.1 9.8,3.1 8.5,4.8 7.1,4.5 5.9,4.3 4.3,6.3 2.7,6.3 -2,4.7 -4.6,5.2 -8,4.4 -12.4,7.3 -16.6,12.2 -17.6,14.7 -16.1,18.1 -17,21.9 -14.4,26.3 -9.6,29.9 -9.3,32.6 -5.9,35.8 -2.2,35.2 1.5,36.6 9.5,37.4 11.1,36.9 10.3,33.8 19.1,30.3 20.1,32.2 21.5,32.8 28.9,30.9 31,31.6 33.8,31 36,34.6 36.2,36.7 27.6,36.7 26.2,39.5 29.2,41.2 33.5,42 38.3,40.9 41.7,42 36.7,45.2 39.1,47.3 35,46.3 36.3,45.1 33.9,44.4 32.5,45.3 33.3,46.1 30.7,46.6 27.7,42.6 28.8,41.1 26.4,40.2 24.9,40.9 23.7,40.7 23.9,40 22.6,40.3 24,37.7 23.1,37.9 23.2,36.4 22.5,36.4 19.4,40.3 19.5,41.7 13.1,45.7 12.3,45.4 12.6,44.1 18.5,40.2 16.9,40.4 17.1,38.9 16.1,38 15.4,40 8.9,44.4 6.5,43.1 3.1,43.1 3,41.9 0.8,41 0.1,38.7 -2.1,36.7 -5.4,35.9 -6.5,36.9 -8.9,36.9 -9.4,43 -1.4,44 -1.2,46 -4.6,48.7 -1.6,48.6 -1.9,49.8 1.3,50.1 4.7,53.1 8.1,53.5 8.8,54 8.1,55.5 8.5,57.1 10.6,57.7 10.9,56.5 9.6,55.5 10.9,54 19.7,54.4 21.3,55.2 21.6,57.4 24.1,57 24.4,58.4 23.3,59.2 29.1,60 22.9,59.8 21.3,60.7 21.5,63.2 25.4,65.1 23.9,66 22.2,65.7 21.4,64.4 17.8,62.7 17.1,61.3 18.8,60.1 16.8,58.7 15.9,56.1 12.9,55.4 10.4,59.5 8.4,58.3 5.7,58.6 5,62 19.2,69.8 28.2,71.2 31.3,70.5 30,70.2 31.1,69.6 40.3,67.9 41.1,66.8 40,66.3 33.2,66.6 34.8,65.9 34.9,64.4 37,63.9 36.5,64.8 37.2,65.1 39.6,64.5 40.4,64.8 39.8,65.5 42.1,66.5 44,66.1 44.5,66.8 43.5,68.6 46.3,68.2 46.8,67.7 45.6,67 46.3,66.7 53.7,68.9 54.5,68.8 53.5,68.2 58.8,68.9 59.9,68.3 61.1,68.9 60,69.5 60.6,69.9 68.5,68.1 69.2,68.6 66.9,69.5 66.7,71 69.9,73 72.8,72.2 71.8,71.4 72.8,70.4 72.6,69 73.7,68.4 71.3,66.3 72.4,66.2 75.1,67.8 74.9,69 73.6,69.6 74.4,70.6 73.1,71.4 74.9,72.1 74.7,72.8 75.7,72.3 75.3,71.3 76.4,71.2 75.9,71.9 77.6,72.3 81.5,71.7 80.5,73.6 86.8,73.9 86,74.5 87.2,75.1 100.8,76.4 104.4,77.7 107.2,76.5 111.1,76.7 114.1,75.8 109.4,74.2 123.2,73 123.3,73.7 127,73.6 131.3,70.8 132.3,71.8 139.9,71.5 139.1,72.4 140.5,72.8 149.5,72.2 153,70.8 159,70.9 160.9,69.4 167.8,69.6 169.6,68.7 170.8,69 170,69.7 170.5,70.1 178.6,69.4 -180,69;-90.5,69.5 -90.5,68.5 -89.2,69.3 -87.3,67.2 -85.6,68.8 -85.5,69.9 -82.6,69.7 -81.3,69.2 -82,68.1 -81.3,67.6 -83.3,66.4 -85.8,66.6 -87.3,64.8 -93.2,62 -94.7,58.9 -93.2,58.8 -92.3,57.1 -82.3,55.1 -82.1,53.3 -79.9,51.2 -78.6,52.6 -79.8,54.7 -76.5,56.5 -78.5,58.8 -77.3,59.9 -78.1,62.3 -73.8,62.4 -69.6,61.1 -69.3,59 -67.7,58.2 -64.6,60.3 -61.4,57 -61.8,56.3 -57.3,54.6 -55.8,53.3 -55.7,52.1 -60,50.2 -66.4,50.2 -71.1,46.8 -65.1,49.2 -64.2,48.7 -65.1,48.1 -64.5,46.2 -61.5,45.9 -60.5,47 -59.8,45.9 -65.4,43.5 -66.2,44.5 -64.4,45.3 -67.1,45.1 -70.7,43 -70,41.6 -73.7,40.9 -71.9,40.9 -74,40.8 -74.9,38.9 -75.5,39.5 -75.1,38.4 -75.9,37.2 -76.4,39.1 -76.3,38.1 -77,38.2 -75.7,35.6 -81.3,31.4 -80.1,26.9 -80.4,25.2 -81.7,25.9 -84.1,30.1 -89.2,30.3 -89.2,29.3 -90.2,29.1 -93.8,29.7 -96.6,28.3 -97.4,27.4 -97.9,22.4 -96.3,19.3 -94.4,18.1 -92,18.7 -90.8,19.3 -90.3,21 -87.1,21.5 -88.9,15.9 -83.4,15.3 -83.8,11.1 -81.4,8.8 -79.6,9.6 -76.8,8.6 -74.9,11.1 -71.8,12.4 -71.1,12.1 -71.9,11.4 -71.7,9.1 -71.4,11 -69.9,12.2 -68.2,10.6 -64.9,10.1 -61.9,10.7 -62.4,9.9 -57.1,6 -54,5.8 -51.3,4.2 -50,1.7 -50.4,-0.1 -48.6,-0.2 -48.6,-1.2 -47.8,-0.6 -44.9,-1.6 -44.6,-2.7 -40,-2.9 -35.6,-5.1 -34.7,-7.3 -35.1,-9 -38.7,-13.1 -39.3,-17.9 -40.9,-21.9 -47.6,-24.9 -48.9,-28.7 -53.8,-34.4 -56.2,-34.9 -58.4,-33.9 -56.8,-36.9 -59.2,-38.7 -62.3,-38.8 -62.7,-41 -65.1,-41.1 -65,-42.1 -63.5,-42.6 -65.2,-43.5 -65.6,-45 -67.3,-45.6 -67.6,-46.3 -65.6,-47.2 -69.1,-50.7 -68.2,-52.4 -70.8,-52.9 -71.4,-53.9 -75.3,-51.6 -75.6,-48.7 -74.1,-46.9 -75.6,-46.6 -74.4,-44.1 -73.2,-44.5 -72.7,-42.4 -74.3,-43.2 -73.2,-39.3 -73.6,-37.2 -71.4,-32.4 -70.2,-19.8 -71.5,-17.4 -76,-14.6 -79.8,-7.2 -81.3,-6.1 -81.4,-4.7 -79.8,-2.7 -81,-2.2 -80.9,-1.1 -77.1,3.8 -78.2,8.3 -79.6,8.9 -80.9,7.2 -85.7,9.9 -87.5,13.3 -91.2,13.9 -94.7,16.2 -96.6,15.7 -103.5,18.3 -105.5,19.9 -106,22.8 -113.9,31.6 -114.8,31.8 -114.7,30.2 -109.4,23.4 -110,22.8 -112.2,24.7 -112.3,26 -115.1,27.7 -114.2,28.6 -117.3,33 -120.6,34.6 -124.4,40.3 -123.9,45.5 -124.7,48.2 -123.1,48 -122.6,47.1 -122.8,49 -127.4,50.8 -127.8,52.3 -129.1,52.8 -134.1,58.1 -147.1,60.9 -151.7,59.2 -150.6,61.3 -154,59.4 -153.3,58.9 -154.2,58.1 -158.4,56 -164.8,54.4 -157.7,57.6 -157,58.9 -162,58.7 -161.9,59.6 -163.8,59.8 -166.1,61.5 -164.6,63.1 -160.8,63.8 -161.5,64.4 -160.8,64.8 -165,64.4 -168.1,65.7 -164.5,66.6 -161.7,66.1 -166.8,68.4 -156.6,71.4 -136.5,68.9 -128.1,70.5 -125.8,69.5 -124.4,70.2 -124.3,69.4 -121.5,69.8 -115.2,68.9 -113.9,68.4 -115.3,67.9 -108.9,67.4 -107.8,67.9 -108.8,68.3 -108.2,68.7 -106.1,68.8 -101.5,67.6 -98.4,67.8 -97.7,68.6 -96.1,68.2 -96.1,67.3 -94.2,69.1 -96.5,70.1 -96.4,71.2 -95.2,71.9 -92.9,71.3 -91.5,70.2 -92.4,69.7 -90.5,69.5;-114.2,73.1 -114.7,72.7 -111.1,72.5 -109.9,73 -108.2,71.7 -107.7,72.1 -108.4,73.1 -105.4,72.7 -104.5,71 -101.1,69.6 -102.7,69.5 -102.4,68.8 -107.1,69.1 -113.3,68.5 -116.1,69.2 -117.3,70 -112.4,70.4 -117.9,70.5 -116.1,71.3 -119.4,71.6 -117.9,72.7 -114.2,73.1;-86.6,73.2 -85.8,72.5 -82.3,73.8 -80.6,72.7 -80.8,72.1 -77.8,72.8 -74.1,71.3 -72.2,71.6 -67.9,70.1 -67,69.2 -68.8,68.7 -61.9,66.9 -63.9,65 -68,66.3 -64.7,63.4 -65,62.7 -68.8,63.7 -66.2,61.9 -74.8,64.7 -78.6,64.6 -77.9,65.3 -74,65.5 -72.9,67.7 -79,70.2 -88.7,70.4 -89.5,70.8 -88.5,71.2 -89.9,71.2 -90.2,72.2 -88.4,73.5 -85.8,73.8 -86.6,73.2;-100.4,73.8 -97.1,73.5 -98.1,73 -96.5,72.6 -96.7,71.7 -98.4,71.3 -102.5,72.5 -100.4,72.7 -101.5,73.4 -100.4,73.8;-93.2,72.8 -95.4,72.1 -96,72.9 -95.5,73.9 -90.5,73.9 -93.2,72.8;-120.5,71.4 -123.1,70.9 -125.9,71.9 -123.9,73.7 -124.9,74.3 -121.5,74.4 -115.5,73.5 -119.2,72.5 -120.5,71.4;145.1,75.6 144.3,74.8 139,74.6 137,75.3 138.8,76.1 145.1,75.6;-98.5,76.7 -97.7,76.3 -98.2,75 -100.9,75.1 -100.9,75.6 -102.5,75.6 -102.6,76.3 -98.5,76.7;-108.2,76.2 -105.9,76 -106.3,75 -113.7,74.4 -111.8,75.2 -116.3,75 -117.7,75.2 -115.4,76.5 -109.1,75.5 -110.5,76.4 -108.2,76.2;57.5,70.7 53.7,70.8 51.5,72 55.6,75.1 61.2,76.3 68.9,76.5 58.5,74.3 55.4,72.4 57.5,70.7;-94.7,77.1 -89.2,75.6 -81.1,75.7 -80.1,75.3 -80.5,74.7 -92.4,74.8 -93.9,76.3 -97.1,76.8 -94.7,77.1;-116.2,77.6 -117.1,76.5 -121.5,75.9 -122.9,76.1 -121.2,76.9 -116.2,77.6;18.3,79.7 21.5,79 19,78.6 17.1,76.8 13.2,78 10.4,79.7 18.3,79.7;25.4,80.4 27.4,80.1 25.9,79.5 18.5,79.9 17.4,80.3 20.5,80.6 25.4,80.4;99.9,78.9 95,79 91.2,80.3 95.9,81.3 100.2,79.8 99.9,78.9;-87,79.7 -85.8,79.3 -90.8,78.2 -96.1,79.7 -96.7,80.2 -94.7,81.2 -92.4,81.3 -87,79.7;-68.5,83.1 -61.9,82.4 -67.7,81.5 -65.5,81.5 -71.2,79.8 -76.9,79.3 -75.4,78.5 -79.8,77.2 -77.9,76.8 -89.5,76.5 -87.8,77.2 -88.3,77.9 -85,77.5 -88,78.4 -85.1,79.3 -86.9,80.3 -81.8,80.5 -87.6,80.5 -91.6,81.9 -79.3,83.1 -68.5,83.1;-27.1,83.5 -20.8,82.7 -31.4,82 -22.9,82.1 -22.1,81.7 -23.2,81.2 -15.8,81.9 -12.2,81.3 -20,80.2 -17.7,80.1 -19.7,78.8 -19.7,77.6 -18.5,77 -21.7,76.6 -19.8,76.1 -19.6,75.2 -20.7,75.2 -19.4,74.3 -23.6,73.3 -22.3,72.2 -24.8,72.3 -21.8,70.7 -25.5,71.4 -25.2,70.8 -26.4,70.2 -22.3,70.1 -39.8,65.5 -42.8,62.7 -42.4,61.9 -43.4,60.1 -46.3,60.9 -49.2,61.4 -53.7,66.1 -54,67.2 -50.9,69.9 -54.7,69.6 -54.4,70.8 -51.4,70.6 -55.8,71.7 -54.7,72.6 -57.3,74.7 -61.3,76.1 -68.5,76.1 -71.4,77 -66.8,77.4 -73.2,78.4 -65.7,79.4 -68,80.1 -60.3,82 -50.4,82.4 -44.5,81.7 -46.8,82.6 -43.4,83.2 -27.1,83.5</script>
+<script>
+(() => {
+'use strict';
+
+/* ---------- 差し替えるときに触る設定 ---------- */
+const YOGURT_NAME = '名称';
+const YOGURT_GROUP = 'メーカー';
+const YOGURT_AXES = ['たんぱく質(g)', '脂質(g)', '炭水化物(g)'];
+const YOGURT_UNIT = 'g';
+const YOGURT_STEP = 5;              // 目盛りの間隔
+const NIGHT_MAX = 3000;             // 棒グラフの上端（人）
+const NIGHT_RINGS = [1000, 2000, 3000];
+const CAUSES = [
+  {key:'disease', label:'病気', color:'var(--c-disease)'},
+  {key:'wounds',  label:'負傷', color:'var(--c-wounds)'},
+  {key:'other',   label:'その他', color:'var(--c-other)'}
+];
+
+/* ---------- 小道具 ---------- */
+const NS = 'http://www.w3.org/2000/svg';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const S = (name, attrs, parent) => { const e = document.createElementNS(NS, name); if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const H = (name, props, parent) => { const e = document.createElement(name); if (props) Object.assign(e, props); if (parent) parent.appendChild(e); return e; };
+const lerp = (a, b, t) => a + (b - a) * t;
+const c01 = x => Math.max(0, Math.min(1, x));
+const ease = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+const f1 = n => (Math.round(n * 10) / 10).toString();
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const num = n => n.toLocaleString('ja-JP');
+
+function tweener(apply, init) {
+  let cur = init, raf = 0;
+  return {
+    get value() { return cur; },
+    set(v) { cancelAnimationFrame(raf); cur = v; apply(cur); },
+    to(target, ms) {
+      cancelAnimationFrame(raf);
+      if (reduce || !ms) { cur = target; apply(cur); return; }
+      const from = cur, t0 = performance.now();
+      const step = now => { const p = c01((now - t0) / ms); cur = lerp(from, target, ease(p)); apply(cur); if (p < 1) raf = requestAnimationFrame(step); };
+      raf = requestAnimationFrame(step);
+    }
+  };
+}
+
+const tip = $('#tip');
+function showTip(e, lines) { tip.replaceChildren(...lines.map((s, i) => H(i ? 'span' : 'b', {textContent: s}))); tip.hidden = false; moveTip(e); }
+function moveTip(e) {
+  const pad = 14, r = tip.getBoundingClientRect();
+  let x = e.clientX + pad, y = e.clientY + pad;
+  if (x + r.width > innerWidth - 8) x = e.clientX - r.width - pad;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - pad;
+  tip.style.transform = `translate(${Math.max(4, x)}px,${Math.max(4, y)}px)`;
+}
+function hideTip() { tip.hidden = true; }
+
+/* ==========================================================
+   場面4：かさねる
+   ========================================================== */
+const L = 125;
+const CO = {
+  cart:  (u, v) => [-L + 2 * L * u, L - 2 * L * v],
+  para:  (u, v) => [-L + 2 * L * u, L - 2 * L * v],
+  polar: (u, v) => [L * v * Math.sin(2 * Math.PI * u), -L * v * Math.cos(2 * Math.PI * u)]
+};
+const BGNAME = {cart: '直交座標系', polar: '極座標系', para: '平行座標'};
+const INK = 'var(--ink)', SOFT = '#b6bac3';
+
+function head(g, x, y, a, s, col) {
+  const p = [[x + Math.cos(a) * s, y + Math.sin(a) * s], [x + Math.cos(a + 2.4) * s * .9, y + Math.sin(a + 2.4) * s * .9], [x + Math.cos(a - 2.4) * s * .9, y + Math.sin(a - 2.4) * s * .9]];
+  S('polygon', {points: p.map(q => f1(q[0]) + ',' + f1(q[1])).join(' '), fill: col}, g);
+}
+function arrow(g, a, b, w, col) {
+  S('line', {x1: f1(a[0]), y1: f1(a[1]), x2: f1(b[0]), y2: f1(b[1]), stroke: col, 'stroke-width': w, 'stroke-linecap': 'round'}, g);
+  head(g, b[0], b[1], Math.atan2(b[1] - a[1], b[0] - a[0]), w * 3.4, col);
+}
+function drawBg(kind, g, thumb) {
+  const P = CO[kind], f = thumb === true ? 1 : (thumb || 0), w = thumb ? 10 * f : 3;
+  const dot = d => S('path', {d, fill: 'none', stroke: SOFT, 'stroke-width': 1.4, 'stroke-dasharray': '2 5', 'stroke-linecap': 'round'}, g);
+  if (kind === 'cart') {
+    if (!thumb) for (const q of [.2, .4, .6, .8, 1]) { dot(`M${P(q, 0)}L${P(q, 1)}`); dot(`M${P(0, q)}L${P(1, q)}`); }
+    arrow(g, P(0, 0), P(1.06, 0), w, INK); arrow(g, P(0, 0), P(0, 1.06), w, INK);
+  } else if (kind === 'polar') {
+    for (const r of (thumb ? [1] : [1 / 3, 2 / 3, 1])) S('circle', {cx: 0, cy: 0, r: f1(L * r), fill: 'none', stroke: SOFT, 'stroke-width': thumb ? 5 * f : 1.4, 'stroke-dasharray': thumb ? '' : '2 5'}, g);
+    if (!thumb) for (let i = 0; i < 12; i++) dot(`M0,0L${P(i / 12, 1)}`);
+    arrow(g, [0, 0], P(0, 1.06), w, INK);
+    S('circle', {cx: 0, cy: 0, r: thumb ? 13 * f : 5, fill: INK}, g);
+    const A0 = 2 * Math.PI * .055, A1 = 2 * Math.PI * .155, rr = thumb ? .62 : .86, p0 = P(.055, rr), p1 = P(.155, rr), hw = thumb ? 22 * f : 9;
+    S('path', {d: `M${p0}A${f1(L * rr)},${f1(L * rr)} 0 0 1 ${p1}`, fill: 'none', stroke: INK, 'stroke-width': thumb ? 7 * f : 2.5}, g);
+    head(g, p1[0], p1[1], A1, hw, INK); head(g, p0[0], p0[1], A0 + Math.PI, hw, INK);
+  } else {
+    if (!thumb) for (const q of [.2, .4, .6, .8, 1]) dot(`M${P(0, q)}L${P(1, q)}`);
+    for (const u of (thumb ? [0, 1 / 3, 2 / 3, 1] : [0, .25, .5, .75, 1])) arrow(g, P(u, 0), P(u, 1.06), thumb ? 8 * f : 3, INK);
+  }
+}
+function rect(g, P, u0, u1, v0, v1) {
+  const a = P(u0, v1), b = P(u1, v0);
+  S('rect', {x: f1(a[0]), y: f1(a[1]), width: f1(b[0] - a[0]), height: f1(b[1] - a[1]), fill: INK}, g);
+}
+const dotAt = (g, P, u, v, r) => { const p = P(u, v); S('circle', {cx: f1(p[0]), cy: f1(p[1]), r, fill: INK}, g); };
+const FG = {
+  bar(g, P) { const v = [.35, .6, .5, .82, .62, .42, .25], b = .8 / 7; v.forEach((h, i) => rect(g, P, .12 + i * b + b * .12, .12 + (i + 1) * b - b * .12, 0, h)); },
+  hist(g, P) { const v = [.1, .22, .4, .62, .8, .72, .5, .32, .18, .1], b = .8 / 10; v.forEach((h, i) => rect(g, P, .1 + i * b - .002, .1 + (i + 1) * b + .002, 0, h)); },
+  mekko(g, P) {
+    const cols = [[.46, [.6, .4]], [.3, [.78, .22]], [.24, [.3, .42, .28]]], k = .86; let x = .08;
+    for (const [w, parts] of cols) { let y = 0; for (const p of parts) { rect(g, P, x + .008, x + w * k - .008, y * k + .008, (y + p) * k - .008); y += p; } x += w * k; }
+  },
+  scatter(g, P) { [[.12, .18], [.2, .26], [.24, .14], [.3, .3], [.36, .22], [.4, .42], [.46, .34], [.5, .52], [.56, .4], [.6, .6], [.66, .5], [.72, .72], [.78, .58], [.84, .8], [.9, .66], [.7, .3], [.34, .56]].forEach(p => dotAt(g, P, p[0], p[1], 6)); },
+  bubble(g, P) { [[.15, .2, 5], [.25, .62, 14], [.33, .35, 8], [.42, .75, 18], [.5, .45, 11], [.58, .25, 6], [.65, .6, 22], [.74, .38, 9], [.8, .82, 13], [.88, .55, 16], [.9, .2, 5], [.2, .42, 7]].forEach(p => dotAt(g, P, p[0], p[1], p[2])); },
+  conn(g, P) {
+    const pts = [[.1, .2], [.22, .28], [.2, .5], [.34, .72], [.42, .5], [.55, .42], [.6, .66], [.74, .6], [.88, .82]];
+    S('polyline', {points: pts.map(p => P(p[0], p[1]).map(f1).join(',')).join(' '), fill: 'none', stroke: INK, 'stroke-width': 3, 'stroke-linejoin': 'round'}, g);
+    pts.forEach(p => dotAt(g, P, p[0], p[1], 6.5));
+  },
+  pie(g, P) {
+    const sh = [.36, .22, .17, .14, .11], r = .9; let a = 0;
+    for (const s of sh) { const p0 = P(a, r), p1 = P(a + s, r); S('path', {d: `M0,0L${p0}A${f1(L * r)},${f1(L * r)} 0 ${s > .5 ? 1 : 0} 1 ${p1}Z`, fill: INK, stroke: 'var(--paper)', 'stroke-width': 4, 'stroke-linejoin': 'round'}, g); a += s; }
+  },
+  radar(g, P) { const v = [.82, .6, .72, .88, .58, .7, .9, .66, .8, .62]; S('polygon', {points: v.map((x, i) => P(i / v.length, x).map(f1).join(',')).join(' '), fill: 'none', stroke: INK, 'stroke-width': 6, 'stroke-linejoin': 'round'}, g); },
+  para(g, P) {
+    const ls = [[.5, .38, .62, .34, .55], [.28, .55, .22, .6, .72], [.62, .28, .78, .5, .2], [.7, .9, .4, .72, .28]];
+    ls.forEach((v, j) => S('polyline', {points: v.map((x, i) => P(i / 4, x).map(f1).join(',')).join(' '), fill: 'none', stroke: INK, 'stroke-width': j === 3 ? 6 : 2, 'stroke-linejoin': 'round'}, g));
+  }
+};
+const RECIPES = [
+  {fg: 'bar',     bg: 'cart',  mark: '面',         name: '棒グラフ'},
+  {fg: 'hist',    bg: 'cart',  mark: '面',         name: 'ヒストグラム'},
+  {fg: 'mekko',   bg: 'cart',  mark: '面',         name: 'メッコ・チャート'},
+  {fg: 'pie',     bg: 'polar', mark: '面',         name: '円グラフ'},
+  {fg: 'scatter', bg: 'cart',  mark: '点',         name: '散布図'},
+  {fg: 'bubble',  bg: 'cart',  mark: '点（大きさ）', name: 'バブル・チャート'},
+  {fg: 'conn',    bg: 'cart',  mark: '点＋線',     name: '連結散布図'},
+  {fg: 'para',    bg: 'para',  mark: '線',         name: 'パラレル・コーディネイト'},
+  {fg: 'radar',   bg: 'polar', mark: '線',         name: 'レーダー・チャート'}
+];
+
+/* 2枚のレイヤーを重ねたり、はがしたりするステージ（場面1と場面4で共用）。k=1 が、はがした状態。 */
+function layerStage(svg, onK, opt) {
+  const CX = 360, CY = 310, HS = 165, LX = 690;
+  const gBg = S('g', {class: 'layer'}, svg), gFg = S('g', {class: 'layer'}, svg);
+  S('rect', {x: -HS, y: -HS, width: 2 * HS, height: 2 * HS, rx: 8, fill: 'var(--paper)', stroke: 'var(--rule)'}, gBg);
+  const fgSheet = S('rect', {x: -HS, y: -HS, width: 2 * HS, height: 2 * HS, rx: 8, fill: 'var(--paper)', stroke: 'var(--rule)'}, gFg);
+  const bg = S('g', null, gBg), fg = S('g', null, gFg);
+  const gLab = S('g', opt && opt.plain ? {display: 'none'} : null, svg), gRes = S('g', null, svg);
+  S('text', {x: LX, y: 180, class: 't-tag'}, gLab).textContent = '前景';
+  const tFg = S('text', {x: LX, y: 220, class: 't-big'}, gLab), tFgSub = S('text', {x: LX, y: 248, class: 't-sub'}, gLab);
+  S('text', {x: LX, y: 322, class: 't-op'}, gLab).textContent = '＋';
+  S('text', {x: LX, y: 404, class: 't-tag'}, gLab).textContent = '背景';
+  const tBg = S('text', {x: LX, y: 444, class: 't-big'}, gLab), tBgSub = S('text', {x: LX, y: 472, class: 't-sub'}, gLab);
+  S('text', {x: 560, y: 321, class: 't-op'}, gRes).textContent = '＝';
+  const tRes = S('text', {x: 606, y: 321, class: 't-res'}, gRes);
+  function render(k) {
+    const sk = (-.72 * k).toFixed(4), sy = (1 - .5 * k).toFixed(4), dy = 112 * k;
+    gBg.setAttribute('transform', `matrix(1 0 ${sk} ${sy} ${CX} ${f1(CY + dy)})`);
+    gFg.setAttribute('transform', `matrix(1 0 ${sk} ${sy} ${CX} ${f1(CY - dy)})`);
+    fgSheet.setAttribute('opacity', (.85 * k).toFixed(3));
+    gLab.setAttribute('opacity', c01(k * 2 - 1).toFixed(3));
+    gRes.setAttribute('opacity', c01(1 - k * 3).toFixed(3));
+  }
+  const K = tweener(k => { render(k); if (onK) onK(k); }, 1);
+  /* 上にドラッグするとはがれ、下にドラッグすると重なる */
+  let drag = null;
+  const narrow = matchMedia('(max-width:760px)');
+  svg.addEventListener('pointerdown', e => { if (narrow.matches && e.pointerType !== 'mouse') return; drag = {y: e.clientY, k: K.value, moved: false}; try { svg.setPointerCapture(e.pointerId); } catch (err) {} });
+  svg.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dy = drag.y - e.clientY;
+    if (Math.abs(dy) > 4) drag.moved = true;
+    if (drag.moved) K.set(c01(drag.k + dy / (svg.clientHeight * .28)));
+  });
+  const end = () => { if (!drag) return; const d = drag; drag = null; if (d.moved) K.to(K.value > .5 ? 1 : 0, 350); };
+  svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+  K.set(1);
+  return {
+    bg, fg, K,
+    set(o) { tFg.textContent = o.fg || ''; tFgSub.textContent = o.fgSub || ''; tBg.textContent = o.bg || ''; tBgSub.textContent = o.bgSub || ''; tRes.textContent = o.res || ''; gRes.setAttribute('visibility', o.res ? 'visible' : 'hidden'); }
+  };
+}
+
+const st4 = {i: 0};
+const tileEls = [];
+const LS4 = layerStage($('#svg4'), k => { $('#act4label').textContent = k > .5 ? 'かさねる' : 'はがす'; });
+function setRecipe(i) {
+  st4.i = (i + RECIPES.length) % RECIPES.length;
+  const r = RECIPES[st4.i];
+  LS4.bg.replaceChildren(); LS4.fg.replaceChildren();
+  drawBg(r.bg, LS4.bg, false); FG[r.fg](LS4.fg, CO[r.bg]);
+  LS4.set({fg: r.mark, bg: BGNAME[r.bg], res: r.name});
+  tileEls.forEach((t, j) => t.setAttribute('aria-pressed', j === st4.i));
+}
+function toggle4() { LS4.K.to(LS4.K.value > .5 ? 0 : 1, 1300); }
+
+(function buildTiles() {
+  const grid = H('div', {className: 'tiles'}, $('#tiles4'));
+  RECIPES.forEach((r, i) => {
+    const b = H('button', {type: 'button', className: 'tile'}, grid);
+    b.setAttribute('aria-pressed', 'false');
+    const s = S('svg', {viewBox: '-150 -150 300 300', 'aria-hidden': 'true'}, b);
+    drawBg(r.bg, s, .5); FG[r.fg](s, CO[r.bg]);
+    H('span', {textContent: r.name}, b);
+    b.addEventListener('click', () => setRecipe(i));
+    tileEls[i] = b;
+  });
+})();
+$('#act4').addEventListener('click', toggle4);
+
+/* ==========================================================
+   場面5：背景だけ替える
+   直交座標の横軸を曲げていき、最後に1点にたたむ。t=0 が直交、t=1 が極。
+   ========================================================== */
+function bender(g, t) {
+  const tt = Math.max(t, 1e-4), th = 2 * Math.PI * tt, rho = g.W * (1 - tt) / th;
+  const e = 1 - (1 - t) * (1 - t);
+  const uc = lerp(.5, g.uc1, t);
+  const cx = lerp(g.x0 + g.W / 2, g.cx1, t) + (g.spread || 0) * Math.sin(Math.PI * t);
+  const yb = lerp(g.yb0, g.yb1, e) - (g.lift || 0) * Math.sin(Math.PI * t * t * t);
+  return {
+    H: lerp(g.Hc, g.R, t),
+    pt(u, h) { const ph = (u - uc) * th; return [cx + (rho + h) * Math.sin(ph), yb + rho - (rho + h) * Math.cos(ph)]; }
+  };
+}
+const P2 = p => f1(p[0]) + ',' + f1(p[1]);
+function bandPath(B, u0, u1, h0, h1, n) {
+  const a = [];
+  for (let i = 0; i <= n; i++) a.push(P2(B.pt(lerp(u0, u1, i / n), h0)));
+  for (let i = n; i >= 0; i--) a.push(P2(B.pt(lerp(u0, u1, i / n), h1)));
+  return 'M' + a.join('L') + 'Z';
+}
+function arcPath(B, u0, u1, h, n) {
+  const a = [];
+  for (let i = 0; i <= n; i++) a.push(P2(B.pt(lerp(u0, u1, i / n), h)));
+  return 'M' + a.join('L');
+}
+
+const svg5 = $('#svg5');
+const gNight = S('g', null, svg5), gYog = S('g', {visibility: 'hidden'}, svg5);
+
+/* ---- ナイチンゲール ---- */
+const night = (() => {
+  const rows = $('#data-nightingale').textContent.trim().split(/\r?\n/).slice(1).map(l => { const c = l.split(','); return {date: c[0], disease: +c[1], wounds: +c[2], other: +c[3]}; });
+  const geoms = [
+    {x0: 90,  W: 430, yb0: 520, yb1: 270, cx1: 310, uc1: .25, Hc: 420, R: 300, spread: -150},
+    {x0: 520, W: 430, yb0: 520, yb1: 270, cx1: 740, uc1: .25, Hc: 420, R: 300, spread: 50}
+  ];
+  const groups = [];
+  const gRing = S('g', null, gNight), gW = S('g', null, gNight), gB = S('g', null, gNight), gT = S('g', null, gNight);
+  for (let gi = 0; gi * 12 < rows.length && gi < geoms.length; gi++) {
+    const ms = rows.slice(gi * 12, gi * 12 + 12);
+    const G = {geom: geoms[gi], months: [], rings: [], base: S('path', {class: 'base'}, gB)};
+    NIGHT_RINGS.forEach(v => G.rings.push({v, el: S('path', {class: 'ring'}, gRing), lab: gi === 0 ? S('text', {class: 't-ax', 'text-anchor': 'end'}, gT) : null}));
+    G.rings.forEach(r => { if (r.lab) r.lab.textContent = num(r.v) + '人'; });
+    ms.forEach((m, i) => {
+      const [y, mo] = m.date.split('-').map(Number);
+      const parts = CAUSES.map(c => ({c, v: m[c.key]})).filter(p => p.v > 0).sort((a, b) => b.v - a.v);
+      const M = {i, n: ms.length, max: Math.max(...parts.map(p => p.v), 0), parts: [], lab: S('text', {class: 't-ax', 'text-anchor': 'middle', 'dominant-baseline': 'central'}, gT)};
+      M.lab.textContent = mo;
+      parts.forEach(p => {
+        const el = S('path', {class: 'wedge', fill: p.c.color}, gW);
+        const lines = [`${y}年${mo}月`, `${p.c.label}　${num(p.v)}人`];
+        el.addEventListener('pointerenter', e => showTip(e, lines));
+        el.addEventListener('pointermove', moveTip);
+        el.addEventListener('pointerleave', hideTip);
+        M.parts.push({v: p.v, el});
+      });
+      G.months.push(M);
+    });
+    const a = ms[0].date.split('-').map(Number), b = ms[ms.length - 1].date.split('-').map(Number);
+    G.cap = S('text', {class: 't-ax', 'text-anchor': 'middle'}, gT);
+    G.cap.textContent = `${a[0]}年${a[1]}月〜${b[0]}年${b[1]}月`;
+    groups.push(G);
+  }
+  function render(t) {
+    const pw = lerp(1, .5, t), fade = Math.pow(Math.abs(2 * t - 1), 1.5).toFixed(3);
+    for (const G of groups) {
+      const B = bender(G.geom, t), hOf = v => B.H * Math.pow(v / NIGHT_MAX, pw);
+      for (const M of G.months) {
+        const ins = lerp(.1, 0, t) / M.n, u0 = M.i / M.n + ins, u1 = (M.i + 1) / M.n - ins;
+        for (const p of M.parts) p.el.setAttribute('d', bandPath(B, u0, u1, 0, hOf(p.v), 8));
+        const lp = B.pt((M.i + .5) / M.n, lerp(-20, Math.max(hOf(M.max) + 16, 46), t));
+        M.lab.setAttribute('x', f1(lp[0])); M.lab.setAttribute('y', f1(lp[1])); M.lab.setAttribute('opacity', fade);
+      }
+      for (const r of G.rings) {
+        r.el.setAttribute('d', arcPath(B, 0, 1, hOf(r.v), 72));
+        const o = r.v >= NIGHT_MAX ? (1 - t).toFixed(3) : '1';
+        r.el.setAttribute('opacity', o);
+        if (r.lab) { const p = B.pt(0, hOf(r.v)); r.lab.setAttribute('x', f1(p[0] - 8)); r.lab.setAttribute('y', f1(p[1] + 5)); r.lab.setAttribute('opacity', o); }
+      }
+      G.base.setAttribute('d', arcPath(B, 0, 1, 0, 48)); G.base.setAttribute('opacity', (1 - t).toFixed(3));
+      G.cap.setAttribute('x', f1(lerp(G.geom.x0 + G.geom.W / 2, G.geom.cx1, t))); G.cap.setAttribute('y', f1(lerp(588, 604, t)));
+    }
+  }
+  const a = rows[0].date.split('-').map(Number), b = rows[rows.length - 1].date.split('-').map(Number);
+  return {
+    render,
+    names: ['棒グラフ', '鶏冠チャート'],
+    sub: `クリミア戦争でのイギリス軍の月別死者数（${a[0]}年${a[1]}月〜${b[0]}年${b[1]}月）`,
+    note: '3色とも根元から測る（積み上げない）。鶏冠チャートでは、半径ではなく面積が人数を表す。',
+    legendTitle: '死因',
+    legend(ul) { for (const c of CAUSES) { const li = H('li', null, ul); H('i', {style: `background:${c.color}`}, li); H('span', {textContent: c.label}, li); } }
+  };
+})();
+
+/* ---- ヨーグルト ---- */
+const yogurt = (() => {
+  const lines = $('#data-yogurt').textContent.replace(/^\s*\n/, '').split(/\r?\n/).filter(l => l.trim());
+  const head = lines[0].split('\t');
+  const iN = head.indexOf(YOGURT_NAME), iG = head.indexOf(YOGURT_GROUP), iA = YOGURT_AXES.map(a => head.indexOf(a));
+  const rows = lines.slice(1).map(l => { const c = l.split('\t'); return {name: c[iN] || '', group: c[iG] || '', vals: iA.map(i => +c[i] || 0)}; });
+  const makers = [...new Set(rows.map(r => r.group))];
+  const n = YOGURT_AXES.length;
+  const vmax = Math.max(YOGURT_STEP, Math.ceil(Math.max(...rows.flatMap(r => r.vals)) / YOGURT_STEP) * YOGURT_STEP);
+  const geom = {x0: 200, W: 600, yb0: 530, yb1: 345, cx1: 500, uc1: 0, Hc: 400, R: 235, spread: -70, lift: 62};
+  const gGrid = S('g', null, gYog), gAx = S('g', null, gYog), gL = S('g', null, gYog), gTop = S('g', null, gYog), gHit = S('g', null, gYog), gT = S('g', null, gYog);
+  const grid = [];
+  for (let v = YOGURT_STEP; v <= vmax + 1e-9; v += YOGURT_STEP) {
+    const lab = S('text', {class: 't-ax', 'text-anchor': 'end'}, gT); lab.textContent = v + (v + YOGURT_STEP > vmax + 1e-9 ? YOGURT_UNIT : '');
+    grid.push({v, el: S('path', {class: 'ring'}, gGrid), close: S('path', {class: 'ring'}, gGrid), lab});
+  }
+  const base = S('path', {class: 'base'}, gGrid), baseClose = S('path', {class: 'base'}, gGrid);
+  const axes = YOGURT_AXES.map(a => { const lab = S('text', {class: 't-axl', 'text-anchor': 'middle', 'dominant-baseline': 'central'}, gT); lab.textContent = a; return {el: S('line', {stroke: 'var(--ink)', 'stroke-width': 2, 'stroke-linecap': 'round'}, gAx), lab}; });
+  let sel = null, hot = null;
+  rows.forEach(r => {
+    r.el = S('path', {class: 'yl'}, gL); r.close = S('path', {class: 'yl'}, gL); r.hit = S('path', {class: 'yhit'}, gHit);
+    const tl = [r.name, r.group, YOGURT_AXES.map((a, i) => `${a.replace(/\(.*\)$/, '')} ${r.vals[i]}${YOGURT_UNIT}`).join('　')];
+    r.hit.addEventListener('pointerenter', e => { hot = r; paint(); showTip(e, tl); });
+    r.hit.addEventListener('pointermove', moveTip);
+    r.hit.addEventListener('pointerleave', () => { hot = null; paint(); hideTip(); });
+  });
+  function paint() {
+    for (const r of rows) {
+      const on = sel !== null && r.group === sel, isHot = r === hot;
+      const cls = 'yl' + (isHot ? ' hot' : on ? ' on' : sel !== null ? ' dim' : '');
+      r.el.setAttribute('class', cls); r.close.setAttribute('class', cls);
+      const home = (on || isHot) ? gTop : gL;
+      if (r.el.parentNode !== home) { home.appendChild(r.el); home.appendChild(r.close); }
+    }
+  }
+  function render(t) {
+    const B = bender(geom, t), den = lerp(n - 1, n, t), U = i => i / den, hOf = v => B.H * v / vmax, cl = c01((t - .7) / .3).toFixed(3);
+    axes.forEach((a, i) => {
+      const p0 = B.pt(U(i), 0), p1 = B.pt(U(i), B.H), pl = B.pt(U(i), B.H + 26);
+      a.el.setAttribute('x1', f1(p0[0])); a.el.setAttribute('y1', f1(p0[1])); a.el.setAttribute('x2', f1(p1[0])); a.el.setAttribute('y2', f1(p1[1]));
+      a.lab.setAttribute('x', f1(pl[0])); a.lab.setAttribute('y', f1(pl[1]));
+    });
+    for (const g of grid) {
+      g.el.setAttribute('d', arcPath(B, 0, U(n - 1), hOf(g.v), 48));
+      g.close.setAttribute('d', arcPath(B, U(n - 1), U(n), hOf(g.v), 24)); g.close.setAttribute('opacity', cl);
+      const p = B.pt(0, hOf(g.v)); g.lab.setAttribute('x', f1(p[0] - 8)); g.lab.setAttribute('y', f1(p[1] + 5));
+    }
+    base.setAttribute('d', arcPath(B, 0, U(n - 1), 0, 24)); base.setAttribute('opacity', (1 - t).toFixed(3));
+    baseClose.setAttribute('opacity', '0');
+    for (const r of rows) {
+      const pts = r.vals.map((v, i) => B.pt(U(i), hOf(v)));
+      const d = 'M' + pts.map(P2).join('L');
+      r.el.setAttribute('d', d); r.hit.setAttribute('d', d);
+      r.close.setAttribute('d', 'M' + P2(pts[n - 1]) + 'L' + P2(B.pt(U(n), hOf(r.vals[0]))));
+      r.close.style.opacity = t <= .7 ? '0' : '';
+      r.close.setAttribute('stroke-opacity', cl);
+    }
+  }
+  return {
+    render,
+    names: ['パラレル・コーディネイト', 'レーダー・チャート'],
+    sub: `コンビニで販売しているヨーグルトの栄養成分（1個あたり、${rows.length}商品）`,
+    note: `軸はどれも 0〜${vmax}${YOGURT_UNIT}。線1本が1商品。`,
+    legendTitle: 'メーカー',
+    legend(ul) {
+      const chips = [];
+      const add = (label, value) => {
+        const li = H('li', null, ul), b = H('button', {type: 'button', className: 'chip', textContent: label}, li);
+        b.setAttribute('aria-pressed', String(sel === value));
+        b.addEventListener('click', () => { sel = value; chips.forEach(c => c.b.setAttribute('aria-pressed', String(c.value === sel))); paint(); });
+        chips.push({b, value});
+      };
+      add('すべて', null); makers.forEach(m => add(m, m));
+    }
+  };
+})();
+
+const DS = {night, yogurt};
+const st5 = {ds: 'night'};
+const scrub = $('#scrub5');
+const T5 = tweener(t => {
+  const d = DS[st5.ds];
+  d.render(t);
+  const nm = $('#name5');
+  nm.textContent = d.names[t < .5 ? 0 : 1];
+  nm.style.opacity = (.15 + .85 * Math.abs(2 * t - 1)).toFixed(3);
+  scrub.value = Math.round(t * 1000);
+  $$('#coord5 button').forEach(b => b.setAttribute('aria-pressed', String((t >= .5) === (b.dataset.to === '1'))));
+}, 0);
+function setDs(k) {
+  st5.ds = k;
+  gNight.setAttribute('visibility', k === 'night' ? 'visible' : 'hidden');
+  gYog.setAttribute('visibility', k === 'yogurt' ? 'visible' : 'hidden');
+  $$('#ds5 button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ds === k)));
+  const d = DS[k];
+  $('#sub5').textContent = d.sub; $('#note5').textContent = d.note; $('#lg5title').textContent = d.legendTitle;
+  const ul = $('#legend5'); ul.replaceChildren(); d.legend(ul);
+  hideTip();
+  T5.set(0);
+}
+function toggle5() { T5.to(T5.value > .5 ? 0 : 1, 2600); }
+$$('#ds5 button').forEach(b => b.addEventListener('click', () => setDs(b.dataset.ds)));
+$$('#coord5 button').forEach(b => { drawBg(b.querySelector('svg').dataset.bg, b.querySelector('svg'), true); b.addEventListener('click', () => T5.to(+b.dataset.to, 2600)); });
+scrub.addEventListener('input', () => T5.set(scrub.value / 1000));
+
+/* ==========================================================
+   場面1：はがす
+   ========================================================== */
+const GREY = '#d9dce1';
+const ANIME = {
+  bg(g) {
+    S('circle', {cx: 78, cy: -82, r: 24, fill: GREY}, g);
+    S('path', {d: 'M-150,60V32Q-95,-28 -35,28Q18,-12 78,24Q118,4 150,26V60Z', fill: '#eceef1'}, g);
+    S('ellipse', {cx: -60, cy: -92, rx: 34, ry: 11, fill: 'none', stroke: SOFT, 'stroke-width': 2}, g);
+    S('ellipse', {cx: -22, cy: -106, rx: 22, ry: 8, fill: 'none', stroke: SOFT, 'stroke-width': 2}, g);
+    S('rect', {x: -122, y: 22, width: 46, height: 38, fill: 'var(--paper)', stroke: INK, 'stroke-width': 2.5}, g);
+    S('path', {d: 'M-130,23L-99,-6L-68,23Z', fill: INK}, g);
+    S('rect', {x: -104, y: 38, width: 11, height: 22, fill: INK}, g);
+    S('line', {x1: 112, y1: 60, x2: 112, y2: 22, stroke: INK, 'stroke-width': 4}, g);
+    S('circle', {cx: 112, cy: 6, r: 22, fill: '#c9ccd2'}, g);
+    S('line', {x1: -150, y1: 60, x2: 150, y2: 60, stroke: INK, 'stroke-width': 2.5, 'stroke-linecap': 'round'}, g);
+  },
+  fg(g) {
+    const ln = (x1, y1, x2, y2, w) => S('line', {x1, y1, x2, y2, stroke: INK, 'stroke-width': w, 'stroke-linecap': 'round'}, g);
+    ln(36, -4, 50, -62, 2);
+    S('circle', {cx: 51, cy: -78, r: 16, fill: 'var(--paper)', stroke: INK, 'stroke-width': 3}, g);
+    S('circle', {cx: 12, cy: -40, r: 13, fill: INK}, g);
+    ln(10, -22, 3, 18, 12); ln(9, -15, 36, -4, 7); ln(9, -15, -16, 2, 7); ln(3, 18, 22, 57, 9); ln(3, 18, -19, 55, 9);
+  }
+};
+const MODE1 = {
+  anime: {bg: g => ANIME.bg(g), fg: g => ANIME.fg(g), fgSub: '登場人物の行動や心情', bgSub: '時間帯や場所など、どんな状況か', note: 'アニメーションは、セル画が重なって一つの絵になる。背景で状況を、前景で登場人物を描く。'},
+  chart: {bg: g => drawBg('cart', g, false), fg: g => FG.scatter(g, CO.cart), fgSub: 'ビジュアル変換：データを図形で描く', bgSub: 'スペース変換：描く空間のきまり', note: 'チャートも同じ。背景は描く空間のきまり、前景はデータを描いた図形。'}
+};
+const st1 = {mode: 'anime'};
+/* 前景・背景のラベルは、重ねた状態でも出しておく（場面2・3へつなぐため） */
+const lab1 = ['fg', 'bg'].map((key, i) => {
+  const g = S('g', {class: 'lab-' + key}, $('#svg1'));
+  S('rect', {x: 0, y: -24, width: 16, height: 16, rx: 2, class: 'sw'}, g);
+  S('text', {x: 26, y: -8, class: 't-big'}, g).textContent = i ? '背景' : '前景';
+  const sub = S('text', {x: 0, y: 22, class: 't-sub'}, g);
+  const link = S('text', {x: 0, y: 50, class: 't-link'}, g);
+  link.textContent = i ? '→ 3 背景をえらぶ' : '→ 2 前景をつくる';
+  link.addEventListener('pointerdown', e => e.stopPropagation());
+  link.addEventListener('click', () => setScene(i ? 3 : 2));
+  return {g, sub};
+});
+const LS1 = layerStage($('#svg1'), k => {
+  $('#act1label').textContent = k > .5 ? 'かさねる' : 'はがす';
+  lab1[0].g.setAttribute('transform', `translate(${f1(lerp(566, 690, k))} ${f1(lerp(262, 190, k))})`);
+  lab1[1].g.setAttribute('transform', `translate(${f1(lerp(566, 690, k))} ${f1(lerp(372, 414, k))})`);
+}, {plain: true});
+LS1.fg.setAttribute('class', 'fgc');
+function setMode1(m) {
+  st1.mode = m;
+  const M = MODE1[m];
+  LS1.bg.replaceChildren(); LS1.fg.replaceChildren();
+  M.bg(LS1.bg); M.fg(LS1.fg);
+  lab1[0].sub.textContent = M.fgSub; lab1[1].sub.textContent = M.bgSub;
+  $('#note1').textContent = M.note;
+  $$('#mode1 button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+}
+function toggle1() { LS1.K.to(LS1.K.value > .5 ? 0 : 1, 1300); }
+$$('#mode1 button').forEach(b => { const s = b.querySelector('svg'), M = MODE1[b.dataset.mode]; M.bg(s); M.fg(S('g', {class: 'fgc'}, s)); b.addEventListener('click', () => setMode1(b.dataset.mode)); });
+$('#act1').addEventListener('click', toggle1);
+
+/* ==========================================================
+   場面2：前景をつくる（図形記号 × 知覚チャンネル）
+   5つの図形記号すべてを、同じ小さなデータで実演する。
+   ========================================================== */
+const MARKS = ['点', '線', '面', 'サーフェイス', 'ボリューム'];
+const CHS = ['配置', 'サイズ', '形状', '色', 'テクスチャ', '動き'];
+const NA = new Set(['0,1', '0,2', '3,2']);            // 「列,行」＝該当なし
+const TWO = {3: ['連続的', '定性的'], 4: ['密度', '種類']};
+const SEQ = ['#cce3fd', '#84b9f3', '#338ced', '#1b64be', '#0e3d7e'], QUAL = ['#257de0', '#f47230', '#00b894'], INKHEX = '#1b1c22';
+const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const mixA = (A, B, t) => A.map((v, i) => lerp(v, B[i], t));
+const seq = q => { const x = c01(q) * (SEQ.length - 1), i = Math.min(SEQ.length - 2, Math.floor(x)); return mixA(rgb(SEQ[i]), rgb(SEQ[i + 1]), x - i); };
+const css = A => 'rgb(' + A.map(Math.round).join(',') + ')';
+const DOTS = [[0, 0], [-.55, -.5], [.5, .55], [.55, -.45], [-.5, .5], [0, -.62], [0, .62], [-.62, 0], [.62, 0], [.27, .22]];
+const LO_STAGE = {xs: [200, 350, 500, 650, 800], y1: 300, yA: 190, yB: 410, s: 60, F: {x0: 150, x1: 870, y0: 490, y1: 110}, cap: true, q: [.2, .5, .3, .8, .6], lab: ['2', '5', '3', '8', '6'], c: [0, 1, 0, 2, 1], tag: 36, ty: [130, 220, 310, 400, 490], tx: [260, 850]};
+const LO_THUMB = {xs: [70, 150, 230], y1: 150, yA: 95, yB: 205, s: 34, F: {x0: 45, x1: 262, y0: 255, y1: 42}, cap: false, q: [.25, .5, .85], lab: [], c: [0, 1, 2], ty: [150], tx: [62, 235]};
+
+function mk(g, m, x, y, s, o = {}) {
+  if (m === 3) return surf(g, x, y, o.a || s * .85, {fill: o.rgb, ghost: o.ghost, tex: o.tex});
+  if (m === 4) return vol(g, x, y, o.a || s * .5, {fill: o.rgb, shape: o.shape, ghost: o.ghost});
+  const fill = o.fill || INK;
+  if (m === 0) return S('circle', {cx: f1(x), cy: f1(y), r: f1(o.r || s * .2), fill: o.ghost ? 'none' : fill, stroke: o.ghost ? INK : (o.ring || 'none'), 'stroke-width': o.ghost ? 2 : 1, 'stroke-dasharray': o.ghost ? '3 3' : ''}, g);
+  if (m === 1) { const len = s * .85; return S('line', {x1: f1(x), y1: f1(y - len), x2: f1(x), y2: f1(y + len), stroke: fill, 'stroke-width': f1(o.w || s * .12), 'stroke-dasharray': o.ghost ? '5 5' : (o.dash || ''), 'stroke-linecap': (o.ghost || o.dash) ? 'butt' : 'round'}, g); }
+  const a = o.a || s * .6, at = {fill: o.ghost ? 'none' : fill, stroke: o.ghost ? INK : (o.ring || 'none'), 'stroke-width': o.ghost ? 2 : 1, 'stroke-dasharray': o.ghost ? '4 4' : ''};
+  if (o.shape === 1) return S('circle', {cx: f1(x), cy: f1(y), r: f1(a), ...at}, g);
+  if (o.shape === 2) return S('polygon', {points: `${f1(x)},${f1(y - a)} ${f1(x + a * 1.1)},${f1(y + a)} ${f1(x - a * 1.1)},${f1(y + a)}`, ...at}, g);
+  return S('rect', {x: f1(x - a), y: f1(y - a), width: f1(2 * a), height: f1(2 * a), ...at}, g);
+}
+function hatch(g, x, y, a, gap, dir, w) {
+  const add = (x1, y1, x2, y2) => S('line', {x1: f1(x + x1), y1: f1(y + y1), x2: f1(x + x2), y2: f1(y + y2), stroke: INK, 'stroke-width': f1(w)}, g);
+  if (dir === 'v') for (let c = -a + gap / 2; c < a; c += gap) add(c, -a, c, a);
+  else if (dir === 'h') for (let c = -a + gap / 2; c < a; c += gap) add(-a, c, a, c);
+  else for (let c = -2 * a + gap / 2; c < 2 * a; c += gap) { const xa = Math.max(-a, c - a), xb = Math.min(a, c + a); if (dir === 'd1') add(xa, xa - c, xb, xb - c); else add(xa, c - xa, xb, c - xb); }
+}
+/* 面をうめる模様。row 0 は密度（v=0〜1）、row 1 は種類（v=0,1,2） */
+function pat(g, x, y, a, row, v, w, u = a) {   // u: 模様の大きさの基準（省略すると a）
+  if (row === 0) hatch(g, x, y, a, u * lerp(.95, .1, v), 'd1', w * 1.3);
+  else if (v === 0) { for (let px = -a + u * .25; px < a; px += u * .5) for (let py = -a + u * .25; py < a; py += u * .5) S('circle', {cx: f1(x + px), cy: f1(y + py), r: f1(u * .08), fill: INK}, g); }
+  else if (v === 1) { hatch(g, x, y, a, u * .4, 'd1', w); hatch(g, x, y, a, u * .4, 'd2', w); }
+  else hatch(g, x, y, a, u * .3, 'h', w);
+}
+function tex(g, m, x, y, a, row, v) {
+  S('rect', {x: f1(x - a), y: f1(y - a), width: f1(2 * a), height: f1(2 * a), fill: m === 2 ? '#eef0f2' : 'var(--paper)', stroke: INK, 'stroke-width': 1.5}, g);
+  const w = Math.max(1, a / 20);
+  if (m === 0) {
+    if (row === 0) DOTS.slice(0, Math.round(1 + v * 9)).forEach(p => S('circle', {cx: f1(x + p[0] * a * .8), cy: f1(y + p[1] * a * .8), r: f1(a * .1), fill: INK}, g));
+    else DOTS.slice(1, 5).forEach(p => mk(g, 2, x + p[0] * a * .85, y + p[1] * a * .85, 0, {a: a * .15, shape: [1, 2, 0][v]}));
+  } else if (m === 1) {
+    if (row === 0) hatch(g, x, y, a, 2 * a / Math.round(2 + v * 10), 'v', w * 1.5);
+    else hatch(g, x, y, a, a * .42, ['d1', 'd2', 'h'][v], w * 1.5);
+  } else pat(g, x, y, a, row, v, w);
+}
+
+/* ---- サーフェイスとボリューム：斜投影で描く（奥行きは右上へ） ---- */
+const KX = .45, KY = .3, BASE3 = [221, 224, 228];
+let SW3 = 1, uid3 = 0;
+const shade = (A, t) => t >= 0 ? mixA(A, [255, 255, 255], t) : mixA(A, rgb(INKHEX), -t);
+const poly = (g, pts, at) => S('polygon', {points: pts.map(P2).join(' '), ...at}, g);
+function clipPat(g, pts, row, v, w) {
+  const id = 'cp' + (++uid3), cp = S('clipPath', {id}, g);
+  poly(cp, pts, {});
+  const X = pts.map(p => p[0]), Y = pts.map(p => p[1]), x0 = Math.min(...X), x1 = Math.max(...X), y0 = Math.min(...Y), y1 = Math.max(...Y);
+  pat(S('g', {'clip-path': `url(#${id})`}, g), (x0 + x1) / 2, (y0 + y1) / 2, Math.max(x1 - x0, y1 - y0) / 2, row, v, w, Math.max(x1 - x0, y1 - y0) / 4);
+}
+/* ボリューム：(x,y) は立体の中心。shape 0=直方体 1=円柱 2=円すい */
+function vol(g, x, y, a, o = {}) {
+  const C = o.fill || BASE3, hh = a, dx = 2 * a * KX, dy = 2 * a * KY;
+  const st = {stroke: INK, 'stroke-width': f1(1.6 * SW3), 'stroke-linejoin': 'round'};
+  if (o.ghost) st['stroke-dasharray'] = `${4 * SW3} ${4 * SW3}`;
+  const fl = t => o.ghost ? 'none' : css(shade(C, t)), ry = a * .34;
+  if (o.shape === 1) {
+    if (o.ghost) return S('path', {d: `M${f1(x - a)},${f1(y - hh)}A${f1(a)},${f1(ry)} 0 0 1 ${f1(x + a)},${f1(y - hh)}V${f1(y + hh)}A${f1(a)},${f1(ry)} 0 0 1 ${f1(x - a)},${f1(y + hh)}Z`, fill: 'none', ...st}, g);
+    S('path', {d: `M${f1(x - a)},${f1(y - hh)}V${f1(y + hh)}A${f1(a)},${f1(ry)} 0 0 0 ${f1(x + a)},${f1(y + hh)}V${f1(y - hh)}Z`, fill: fl(0), ...st}, g);
+    return S('ellipse', {cx: f1(x), cy: f1(y - hh), rx: f1(a), ry: f1(ry), fill: fl(.55), ...st}, g);
+  }
+  if (o.shape === 2) return S('path', {d: `M${f1(x - a)},${f1(y + hh)}L${f1(x)},${f1(y - hh)}L${f1(x + a)},${f1(y + hh)}A${f1(a)},${f1(ry)} 0 0 1 ${f1(x - a)},${f1(y + hh)}Z`, fill: fl(.15), ...st}, g);
+  const x0 = x - dx / 2, y0 = y + dy / 2, xl = x0 - a, xr = x0 + a, yt = y0 - hh, yb = y0 + hh;
+  if (o.ghost) return poly(g, [[xl, yb], [xl, yt], [xl + dx, yt - dy], [xr + dx, yt - dy], [xr + dx, yb - dy], [xr, yb]], {fill: 'none', ...st});
+  poly(g, [[xl, yt], [xr, yt], [xr + dx, yt - dy], [xl + dx, yt - dy]], {fill: fl(.55), ...st});
+  poly(g, [[xr, yt], [xr + dx, yt - dy], [xr + dx, yb - dy], [xr, yb]], {fill: fl(-.22), ...st});
+  S('rect', {x: f1(xl), y: f1(yt), width: f1(2 * a), height: f1(2 * hh), fill: fl(0), ...st}, g);
+  return {fx: x0, fy: y0};
+}
+/* サーフェイス：高さの格子（手前の列→奥の列）を面でつなぐ。手前と右に壁を立てる */
+const SURF = [[.35, .42, .3, .2, .15], [.55, .68, .5, .3, .24], [.7, .92, .7, .4, .3], [.75, .96, .8, .5, .35]];
+function surf(g, x, y, a, o = {}) {
+  const Hg = o.H || SURF, nj = Hg.length, ni = Hg[0].length, C = o.fill || BASE3;
+  const ax = o.ax || a, ad = o.ad || a * 1.5, az = o.az || a * 1.25;
+  const ox = o.origin ? o.origin[0] : x - ad * KX / 2, oy = o.origin ? o.origin[1] : y + az * .5 + ad * KY / 2;
+  const V = (i, j, h) => [ox + (i / (ni - 1) - .5) * 2 * ax + j / (nj - 1) * ad * KX, oy - h * az - j / (nj - 1) * ad * KY];
+  const top = (i, j) => V(i, j, Hg[j][i]);
+  const st = {stroke: INK, 'stroke-linejoin': 'round'};
+  if (o.ghost) {
+    const sil = [];
+    for (let i = 0; i < ni; i++) sil.push(V(i, 0, 0));
+    for (let j = 1; j < nj; j++) sil.push(V(ni - 1, j, 0));
+    for (let i = ni - 1; i >= 0; i--) sil.push(top(i, nj - 1));
+    for (let j = nj - 2; j >= 0; j--) sil.push(top(0, j));
+    return poly(g, sil, {fill: 'none', ...st, 'stroke-width': f1(1.6 * SW3), 'stroke-dasharray': `${4 * SW3} ${4 * SW3}`});
+  }
+  for (let j = nj - 2; j >= 0; j--) for (let i = 0; i < ni - 1; i++) {
+    const slope = (Hg[j + 1][i] + Hg[j + 1][i + 1] - Hg[j][i] - Hg[j][i + 1]) / 2;
+    poly(g, [top(i, j), top(i + 1, j), top(i + 1, j + 1), top(i, j + 1)], {fill: css(shade(C, c01(.3 + slope * 1.2) * .6)), ...st, stroke: o.tex ? 'none' : INK, 'stroke-width': f1(.8 * SW3)});
+  }
+  const front = [], right = [], rim = [];
+  for (let i = 0; i < ni; i++) front.push(top(i, 0));
+  front.push(V(ni - 1, 0, 0), V(0, 0, 0));
+  for (let j = 0; j < nj; j++) right.push(top(ni - 1, j));
+  right.push(V(ni - 1, nj - 1, 0), V(ni - 1, 0, 0));
+  for (let i = 0; i < ni; i++) rim.push(top(i, 0));
+  for (let j = 1; j < nj; j++) rim.push(top(ni - 1, j));
+  for (let i = ni - 2; i >= 0; i--) rim.push(top(i, nj - 1));
+  for (let j = nj - 2; j >= 1; j--) rim.push(top(0, j));
+  poly(g, right, {fill: css(shade(C, -.4)), ...st, 'stroke-width': f1(1.2 * SW3)});
+  poly(g, front, {fill: css(shade(C, -.24)), ...st, 'stroke-width': f1(1.2 * SW3)});
+  if (o.tex) o.tex(rim);
+  poly(g, rim, {fill: 'none', ...st, 'stroke-width': f1(2.2 * SW3)});
+}
+/* サーフェイス／ボリューム × 配置：床のある空間に置く */
+function place3(g, m, e, Lo, cap) {
+  const {F, q} = Lo, n = q.length, W = (F.x1 - F.x0) * .6, D = W * .62, fx = (F.x0 + F.x1) / 2 - W / 2 - D * KX / 2, fy = F.y0;
+  const Pj = (X, d, Z) => [fx + X + d * KX, fy - Z - d * KY];
+  const aw = Lo.cap ? 2.5 : 5, ac = Lo.cap ? '#9aa0aa' : SOFT, Hm = (F.y0 - F.y1) * (Lo.cap ? .5 : .42);
+  const dot = (p0, p1) => S('path', {d: `M${P2(p0)}L${P2(p1)}`, fill: 'none', stroke: SOFT, 'stroke-width': 1.4, 'stroke-dasharray': '2 5', 'stroke-linecap': 'round'}, g);
+  poly(g, [Pj(0, 0, 0), Pj(W, 0, 0), Pj(W, D, 0), Pj(0, D, 0)], {fill: '#f5f6f7'});
+  if (Lo.cap) { for (let i = 1; i <= n; i++) dot(Pj(W * i / n, 0, 0), Pj(W * i / n, D, 0)); for (let j = 1; j <= 4; j++) dot(Pj(0, D * j / 4, 0), Pj(W, D * j / 4, 0)); }
+  arrow(g, Pj(0, 0, 0), Pj(W + 26, 0, 0), aw, ac); arrow(g, Pj(0, 0, 0), Pj(0, D + 34, 0), aw, ac); arrow(g, Pj(0, 0, 0), Pj(0, 0, Hm + 26), aw, ac);
+  if (m === 3) {
+    const Hg = [0, 1, 2, 3].map(() => q.map(v => lerp(.45, .12 + .85 * v, e)));
+    surf(g, 0, 0, 0, {H: Hg, origin: Pj(W / 2, D * .14, 0), ax: W * .42, ad: D * .72, az: Hm});
+    q.forEach((v, i) => cap(Pj(W * (.08 + .84 * i / (n - 1)), 0, 0)[0], fy + 34, Lo.lab[i]));
+  } else {
+    const a = W / n * .3;
+    q.map((v, i) => ({X: W * (i + .5) / n, d: lerp(D / 2, D * (.16 + .7 * v), e)})).sort((p, r) => r.d - p.d).forEach(it => {
+      S('path', {d: `M${P2(Pj(it.X, 0, 0))}L${P2(Pj(it.X, it.d, 0))}`, stroke: '#b6bac3', 'stroke-width': f1(1.2 * SW3)}, g);
+      const p = Pj(it.X, it.d, a); vol(g, p[0], p[1], a);
+    });
+    q.forEach((v, i) => cap(Pj(W * (i + .5) / n, 0, 0)[0], fy + 34, Lo.lab[i]));
+  }
+}
+
+/* e: 0=どれも同じ見た目 → 1=データに応じた見た目。time: 「動き」用の経過秒（null なら静止図） */
+function demo(g, m, ch, e, time, Lo) {
+  g.replaceChildren();
+  SW3 = Lo.cap ? 1 : 2.2;
+  const {xs, F, q, c} = Lo, n = xs.length, s = (m === 4 && !Lo.cap) ? Lo.s * 1.25 : Lo.s;
+  const cap = (x, y, t) => { if (Lo.cap) S('text', {x: f1(x), y: f1(y), class: 't-cap', 'text-anchor': 'middle'}, g).textContent = t; };
+  if (NA.has(m + ',' + ch)) { S('text', {x: 500, y: 325, class: 't-na', 'text-anchor': 'middle'}, g).textContent = '該当なし'; return; }
+  if (ch === 0) {
+    if (m > 2) { place3(g, m, e, Lo, cap); return; }
+    const aw = Lo.cap ? 2.5 : 5, ac = Lo.cap ? '#9aa0aa' : SOFT;
+    arrow(g, [F.x0, F.y0], [F.x1, F.y0], aw, ac); arrow(g, [F.x0, F.y0], [F.x0, F.y1], aw, ac);
+    const ym = (F.y0 + F.y1) / 2, P = xs.map((x, i) => [x, lerp(ym, F.y0 - (F.y0 - F.y1) * (.12 + .78 * q[i]), e)]);
+    if (m === 1) S('polyline', {points: P.map(P2).join(' '), fill: 'none', stroke: INK, 'stroke-width': f1(s * .1), 'stroke-linejoin': 'round', 'stroke-linecap': 'round'}, g);
+    else P.forEach(p => mk(g, m, p[0], p[1], s, {a: s * .36, r: s * .22}));
+    xs.forEach((x, i) => cap(x, F.y0 + 32, Lo.lab[i]));
+    return;
+  }
+  if (ch === 1) {
+    xs.forEach((x, i) => {
+      if (m === 1) mk(g, 1, x, Lo.y1, s, {w: lerp(s * .12, s * (.05 + .6 * q[i]), e)});
+      else if (m === 2) mk(g, 2, x, Lo.y1, s, {a: lerp(s * .6, s * 1.25 * Math.sqrt(q[i]), e)});
+      else if (m === 3) mk(g, 3, x, Lo.y1, s, {a: lerp(s * .85, s * Math.sqrt(q[i]), e)});
+      else mk(g, 4, x, Lo.y1, s, {a: lerp(s * .5, s * .85 * Math.cbrt(q[i]), e)});
+      cap(x, Lo.y1 + s * 1.25 + 40, Lo.lab[i]);
+    });
+    return;
+  }
+  if (ch === 2) {
+    const g0 = S('g', {opacity: (1 - e).toFixed(3)}, g), g1 = S('g', {opacity: e.toFixed(3)}, g);
+    xs.forEach((x, i) => {
+      mk(g0, m, x, Lo.y1, s);
+      mk(g1, m, x, Lo.y1, s, m === 1 ? {dash: ['', `${f1(s * .3)} ${f1(s * .2)}`, `${f1(s * .08)} ${f1(s * .17)}`][c[i]]} : {shape: c[i]});
+      cap(x, Lo.y1 + s + 40, 'ABC'[c[i]]);
+    });
+    return;
+  }
+  if (ch === 3 || ch === 4) {
+    [Lo.yA, Lo.yB].forEach((y, row) => {
+      if (Lo.cap) S('text', {x: Lo.tag, y: f1(y + 6), class: 't-row'}, g).textContent = TWO[ch][row];
+      const g0 = S('g', {opacity: (1 - e).toFixed(3)}, g), g1 = S('g', {opacity: e.toFixed(3)}, g);
+      xs.forEach((x, i) => {
+        const val = row === 0 ? q[i] : c[i];
+        if (ch === 3) {
+          const col = row === 0 ? seq(q[i]) : rgb(QUAL[c[i]]);
+          mk(g, m, x, y, s, {fill: css(mixA(rgb(INKHEX), col, e)), rgb: mixA(BASE3, col, e), r: s * .32, w: s * .22, ring: '#8d93a0'});
+        } else {
+          mk(g0, m, x, y, s);
+          if (m < 3) tex(g1, m, x, y, s * .62, row, val);
+          else if (m === 3) mk(g1, 3, x, y, s, {tex: rim => clipPat(g1, rim, row, val, 1.2 * SW3)});
+          else { const r = mk(g1, 4, x, y, s); pat(g1, r.fx, r.fy, s * .5, row, val, 1.2 * SW3); }
+        }
+        cap(x, y + s + 32, row === 0 ? Lo.lab[i] : 'ABC'[c[i]]);
+      });
+    });
+    return;
+  }
+  /* 動き：値が大きいほど速く動く */
+  const [x0, x1] = Lo.tx, sm = Lo.cap ? s * .7 : s;
+  Lo.ty.forEach((y, i) => {
+    const qi = Lo.ty.length === 1 ? q[n - 1] : q[i];
+    if (Lo.cap) S('line', {x1: x0, y1: y, x2: x1, y2: y, stroke: '#e3e5e9', 'stroke-width': 1.5}, g);
+    mk(g, m, x0, y, sm, {ghost: true});
+    const p = time == null ? .12 + .85 * qi : (time * (.05 + .45 * qi)) % 1, x = lerp(x0, x1, p);
+    if (time == null) arrow(g, [x0 + sm * .9, y], [x - sm * 1.1, y], Lo.cap ? 2.5 : 5, INK);
+    mk(g, m, x, y, sm);
+    cap(x0 - 70, y + 6, Lo.lab[i]);
+  });
+}
+
+const svg2 = $('#svg2'), g2 = S('g', null, svg2);
+const st2 = {col: 0, row: 0, seen: new Set(), t0: 0};
+const cells = {};
+let raf2 = 0;
+function draw2(now) {
+  const t = (reduce || st2.row !== 5) ? null : ((now == null ? performance.now() : now) - st2.t0) / 1000;
+  demo(g2, st2.col, st2.row, E2.value, t, LO_STAGE);
+}
+const E2 = tweener(() => draw2(), 1);
+function loop2(now) { raf2 = 0; if (scene !== 2 || st2.row !== 5 || reduce) return; draw2(now); raf2 = requestAnimationFrame(loop2); }
+function markIcon(s, c) {
+  for (let i = 0; i <= 4; i++) { const p = 14 + i * 18; S('line', {x1: p, y1: 14, x2: p, y2: 86, stroke: SOFT, 'stroke-width': 1.5}, s); S('line', {x1: 14, y1: p, x2: 86, y2: p, stroke: SOFT, 'stroke-width': 1.5}, s); }
+  SW3 = 1.5;
+  if (c === 0) S('circle', {cx: 50, cy: 50, r: 6, fill: 'var(--paper)', stroke: INK, 'stroke-width': 4}, s);
+  else if (c === 1) S('line', {x1: 32, y1: 32, x2: 68, y2: 68, stroke: INK, 'stroke-width': 5, 'stroke-linecap': 'round'}, s);
+  else if (c === 2) S('rect', {x: 32, y: 32, width: 36, height: 36, fill: GREY, stroke: INK, 'stroke-width': 5}, s);
+  else if (c === 3) surf(s, 50, 50, 25);
+  else vol(s, 50, 51, 20);
+}
+function fillCell(b, c, r) {
+  b.classList.remove('new'); b.replaceChildren();
+  if (NA.has(c + ',' + r)) { H('small', {textContent: '該当なし'}, b); return; }
+  demo(S('svg', {viewBox: '0 0 300 300', 'aria-hidden': 'true'}, b), c, r, 1, null, LO_THUMB);
+}
+function select2(c, r) {
+  st2.col = (c + 5) % 5; st2.row = (r + 6) % 6; st2.t0 = performance.now();
+  const k = st2.col + ',' + st2.row;
+  $('#name2').textContent = `${MARKS[st2.col]} × ${CHS[st2.row]}`;
+  if (NA.has(k)) { E2.set(1); }
+  else { E2.set(0); E2.to(1, 1100); if (st2.row === 5 && !raf2 && !reduce) raf2 = requestAnimationFrame(loop2); }
+  if (!st2.seen.has(k)) { st2.seen.add(k); fillCell(cells[k], st2.col, st2.row); }
+  for (const kk in cells) cells[kk].setAttribute('aria-pressed', String(kk === k));
+  $('#note2').textContent = `30マスのうち ${st2.seen.size} マスを見た。`;
+}
+(function buildMx() {
+  const box = $('#mx2');
+  H('div', null, box);
+  MARKS.forEach((m, c) => {
+    const d = H('div', {className: 'ch'}, box);
+    markIcon(S('svg', {viewBox: '0 0 100 100', 'aria-hidden': 'true'}, d), c);
+    H('span', {textContent: m}, d);
+  });
+  CHS.forEach((ch, r) => {
+    H('div', {className: 'rh', textContent: ch}, box);
+    MARKS.forEach((m, c) => {
+      const b = H('button', {type: 'button', className: 'cell new'}, box);
+      b.setAttribute('aria-label', `${m} × ${ch}`); b.setAttribute('aria-pressed', 'false');
+      b.addEventListener('click', () => select2(c, r));
+      cells[c + ',' + r] = b;
+    });
+  });
+})();
+
+/* ==========================================================
+   場面3：背景をえらぶ
+   同じ14都市（経度・緯度）を、4つの座標系に置く。
+   ========================================================== */
+const CITIES = [['東京', 139.7, 35.7], ['ソウル', 127.0, 37.6], ['上海', 121.5, 31.2], ['ジャカルタ', 106.8, -6.2], ['デリー', 77.2, 28.6], ['モスクワ', 37.6, 55.8], ['カイロ', 31.2, 30.0], ['ラゴス', 3.4, 6.5], ['ロンドン', -0.1, 51.5], ['サンパウロ', -46.6, -23.6], ['ニューヨーク', -74.0, 40.7], ['メキシコシティ', -99.1, 19.4], ['ロサンゼルス', -118.2, 34.1], ['シドニー', 151.2, -33.9]];
+const FOCUS = 0;                       // 色を変えて追いかける都市
+const RAD = Math.PI / 180;
+/* Natural Earth 図法 */
+const ne1 = (lon, lat) => { const l = lon * RAD, p = lat * RAD, p2 = p * p, p4 = p2 * p2; return [l * (0.8707 - 0.131979 * p2 + p4 * (-0.013791 + p4 * (0.003971 * p2 - 0.001529 * p4))), p * (1.007226 + p2 * (0.015085 + p4 * (-0.044475 + 0.028874 * p2 - 0.005916 * p4)))]; };
+const BOX3 = {x0: 110, x1: 890, y0: 505, y1: 115}, PC = [500, 312], PR = 262, GK = 780 / (2 * Math.PI * 0.8707);
+const PROJ = {
+  cart: (lon, lat) => [lerp(BOX3.x0, BOX3.x1, (lon + 180) / 360), lerp(BOX3.y0, BOX3.y1, (lat + 90) / 180)],
+  polar: (lon, lat) => { const r = (90 - lat) / 180 * PR, a = lon * RAD; return [PC[0] + r * Math.sin(a), PC[1] - r * Math.cos(a)]; },
+  geo: (lon, lat) => { const p = ne1(lon, lat); return [500 + GK * p[0], 310 - GK * p[1]]; }
+};
+const EDGES = (() => {
+  const dist = (a, b) => { const p1 = a[2] * RAD, p2 = b[2] * RAD, dl = (b[1] - a[1]) * RAD, h = Math.sin((p2 - p1) / 2) ** 2 + Math.cos(p1) * Math.cos(p2) * Math.sin(dl / 2) ** 2; return 2 * Math.asin(Math.sqrt(h)); };
+  const set = new Set();
+  CITIES.forEach((a, i) => { CITIES.map((b, j) => [dist(a, b), j]).filter(d => d[1] !== i).sort((x, y) => x[0] - y[0]).slice(0, 3).forEach(d => set.add(Math.min(i, d[1]) + ',' + Math.max(i, d[1]))); });
+  return [...set].map(s => s.split(',').map(Number));
+})();
+const NETPOS = (() => {
+  const n = CITIES.length, P = CITIES.map((_, i) => [Math.cos(i / n * 2 * Math.PI), Math.sin(i / n * 2 * Math.PI)]), k = .6, IT = 500;
+  for (let it = 0; it < IT; it++) {
+    const D = P.map(() => [0, 0]);
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) { const dx = P[i][0] - P[j][0], dy = P[i][1] - P[j][1], d = Math.max(.01, Math.hypot(dx, dy)), f = k * k / d; D[i][0] += dx / d * f; D[i][1] += dy / d * f; D[j][0] -= dx / d * f; D[j][1] -= dy / d * f; }
+    for (const [a, b] of EDGES) { const dx = P[a][0] - P[b][0], dy = P[a][1] - P[b][1], d = Math.max(.01, Math.hypot(dx, dy)), f = d * d / k; D[a][0] -= dx / d * f; D[a][1] -= dy / d * f; D[b][0] += dx / d * f; D[b][1] += dy / d * f; }
+    const t = .12 * (1 - it / IT) + .002;
+    P.forEach((p, i) => { const m = Math.hypot(D[i][0], D[i][1]) || 1, s = Math.min(m, t) / m; p[0] += D[i][0] * s; p[1] += D[i][1] * s; });
+  }
+  const xs = P.map(p => p[0]), ys = P.map(p => p[1]), mx = Math.min(...xs), Mx = Math.max(...xs), my = Math.min(...ys), My = Math.max(...ys);
+  return P.map(p => [500 + (p[0] - (mx + Mx) / 2) * 640 / (Mx - mx || 1), 312 + (p[1] - (my + My) / 2) * 390 / (My - my || 1)]);
+})();
+const POS = {cart: CITIES.map(c => PROJ.cart(c[1], c[2])), polar: CITIES.map(c => PROJ.polar(c[1], c[2])), geo: CITIES.map(c => PROJ.geo(c[1], c[2])), net: NETPOS};
+const LAND_D = $('#data-land').textContent.trim().split(';').map(r => 'M' + r.split(' ').map(p => { const [lo, la] = p.split(',').map(Number); return P2(PROJ.geo(lo, la)); }).join('L') + 'Z').join('');
+const SYS = [
+  {k: 'cart',  name: '直交座標系',       kana: 'たて・よこ',   sub: 'よこが経度、たてが緯度。'},
+  {k: 'polar', name: '極座標系',         kana: 'むき・きょり', sub: 'むきが経度、きょりが北極からの遠さ。'},
+  {k: 'geo',   name: '地理座標系',       kana: 'ちず',         sub: '地形を背景にすると、地図になる。'},
+  {k: 'net',   name: 'ネットワーク座標系', kana: 'かんけい',     sub: '位置に意味はない。線が関係（近い都市どうし）を表す。'}
+];
+const svg3 = $('#svg3');
+const bgEl = {};
+(function buildBg3() {
+  const dotted = (g, d) => S('path', {d, fill: 'none', stroke: SOFT, 'stroke-width': 1.4, 'stroke-dasharray': '2 5', 'stroke-linecap': 'round'}, g);
+  const lab = (g, x, y, t, anchor) => { S('text', {x, y, class: 't-row', 'text-anchor': anchor || 'start'}, g).textContent = t; };
+  /* 直交 */
+  let g = bgEl.cart = S('g', null, svg3);
+  for (let lo = -120; lo <= 180; lo += 60) dotted(g, `M${P2(PROJ.cart(lo, -90))}L${P2(PROJ.cart(lo, 90))}`);
+  for (let la = -60; la <= 90; la += 30) dotted(g, `M${P2(PROJ.cart(-180, la))}L${P2(PROJ.cart(180, la))}`);
+  arrow(g, [BOX3.x0, BOX3.y0], [BOX3.x1 + 26, BOX3.y0], 3, INK); arrow(g, [BOX3.x0, BOX3.y0], [BOX3.x0, BOX3.y1 - 26], 3, INK);
+  lab(g, BOX3.x1 + 30, BOX3.y0 + 34, '経度', 'end'); lab(g, BOX3.x0 + 16, BOX3.y1 - 30, '緯度');
+  /* 極 */
+  g = bgEl.polar = S('g', {opacity: 0}, svg3);
+  for (let la = 60; la >= -90; la -= 30) S('circle', {cx: PC[0], cy: PC[1], r: f1((90 - la) / 180 * PR), fill: 'none', stroke: SOFT, 'stroke-width': 1.4, 'stroke-dasharray': '2 5'}, g);
+  for (let lo = 0; lo < 360; lo += 30) dotted(g, `M${PC}L${P2(PROJ.polar(lo, -90))}`);
+  arrow(g, PC, [PC[0], PC[1] - PR - 24], 3, INK);
+  S('circle', {cx: PC[0], cy: PC[1], r: 5, fill: INK}, g);
+  const ra = PR + 14, A0 = 8 * RAD, A1 = 30 * RAD, pa = a => [PC[0] + ra * Math.sin(a), PC[1] - ra * Math.cos(a)];
+  S('path', {d: `M${P2(pa(A0))}A${ra},${ra} 0 0 1 ${P2(pa(A1))}`, fill: 'none', stroke: INK, 'stroke-width': 2.5}, g);
+  head(g, pa(A1)[0], pa(A1)[1], A1, 10, INK); head(g, pa(A0)[0], pa(A0)[1], A0 + Math.PI, 10, INK);
+  lab(g, PC[0] - 14, PC[1] - PR - 10, '北極からの距離', 'end'); lab(g, pa(A1)[0] + 16, pa(A1)[1] + 4, '経度'); lab(g, PC[0] + 10, PC[1] + 22, '北極');
+  /* 地理 */
+  g = bgEl.geo = S('g', {opacity: 0}, svg3);
+  const rim = []; for (let la = -90; la <= 90; la += 5) rim.push(P2(PROJ.geo(180, la))); for (let la = 90; la >= -90; la -= 5) rim.push(P2(PROJ.geo(-180, la)));
+  S('path', {d: 'M' + rim.join('L') + 'Z', fill: '#f7f8f9', stroke: 'var(--rule)'}, g);
+  S('path', {d: LAND_D, fill: '#d3d6db'}, g);
+  /* ネットワーク（線は点といっしょに動かす） */
+  bgEl.net = S('g', {opacity: 0}, svg3);
+})();
+const links3 = EDGES.map(() => S('line', {class: 'link'}, bgEl.net));
+const gN3 = S('g', null, svg3);
+const nodes3 = CITIES.map((c, i) => {
+  const el = S('circle', {class: 'node', r: i === FOCUS ? 10 : 7.5, fill: i === FOCUS ? 'var(--pink)' : INK}, gN3);
+  const ew = c[1] < 0 ? '西経' : '東経', ns = c[2] < 0 ? '南緯' : '北緯', lines = [c[0], `${ew} ${Math.abs(c[1])}°　${ns} ${Math.abs(c[2])}°`];
+  el.addEventListener('pointerenter', e => showTip(e, lines)); el.addEventListener('pointermove', moveTip); el.addEventListener('pointerleave', hideTip);
+  return el;
+});
+const focusLab = S('text', {class: 't-city'}, gN3); focusLab.textContent = CITIES[FOCUS][0];
+gN3.appendChild(nodes3[FOCUS]);
+const st3 = {i: 0, from: null, o0: null};
+let cur3 = POS.cart.map(p => p.slice());
+const op3 = {cart: 1, polar: 0, geo: 0, net: 0};
+function paint3() {
+  nodes3.forEach((el, i) => { el.setAttribute('cx', f1(cur3[i][0])); el.setAttribute('cy', f1(cur3[i][1])); });
+  focusLab.setAttribute('x', f1(cur3[FOCUS][0] + 14)); focusLab.setAttribute('y', f1(cur3[FOCUS][1] - 10));
+  EDGES.forEach(([a, b], j) => { const l = links3[j]; l.setAttribute('x1', f1(cur3[a][0])); l.setAttribute('y1', f1(cur3[a][1])); l.setAttribute('x2', f1(cur3[b][0])); l.setAttribute('y2', f1(cur3[b][1])); });
+}
+const P3 = tweener(p => {
+  const to = POS[SYS[st3.i].k];
+  cur3 = st3.from.map((a, j) => [lerp(a[0], to[j][0], p), lerp(a[1], to[j][1], p)]);
+  for (const s of SYS) { op3[s.k] = lerp(st3.o0[s.k], s.k === SYS[st3.i].k ? 1 : 0, p); bgEl[s.k].setAttribute('opacity', op3[s.k].toFixed(3)); }
+  paint3();
+}, 1);
+const sysBtns = SYS.map((s, i) => {
+  const b = H('button', {type: 'button'}, $('#sys3')), ic = S('svg', {viewBox: '-150 -150 300 300', 'aria-hidden': 'true'}, b);
+  if (s.k === 'cart' || s.k === 'polar') drawBg(s.k, ic, true);
+  else if (s.k === 'geo') S('path', {d: LAND_D, fill: '#9aa0aa', transform: 'scale(.37) translate(-500 -310)'}, ic);
+  else { const N = [[-90, -60], [20, -95], [95, -10], [-20, 20], [-70, 90], [70, 85]], E = [[0, 1], [1, 2], [0, 3], [3, 2], [3, 4], [3, 5]]; E.forEach(([a, c]) => S('line', {x1: N[a][0], y1: N[a][1], x2: N[c][0], y2: N[c][1], stroke: INK, 'stroke-width': 7}, ic)); N.forEach(p => S('circle', {cx: p[0], cy: p[1], r: 17, fill: INK}, ic)); }
+  b.appendChild(document.createTextNode(s.name)); H('small', {textContent: s.kana}, b);
+  b.addEventListener('click', () => setSys(i));
+  return b;
+});
+function setSys(i) {
+  st3.i = (i + SYS.length) % SYS.length;
+  st3.from = cur3.map(p => p.slice()); st3.o0 = {...op3};
+  const s = SYS[st3.i];
+  $('#name3').textContent = s.name; $('#sub3').textContent = s.sub;
+  sysBtns.forEach((b, j) => b.setAttribute('aria-pressed', String(j === st3.i)));
+  hideTip();
+  P3.set(0); P3.to(1, 1500);
+}
+$('#note3').textContent = `点は世界の${CITIES.length}都市。ピンクが${CITIES[FOCUS][0]}。`;
+
+/* ==========================================================
+   場面の切り替えとキー操作
+   ========================================================== */
+const SCENES = [
+  {n: 1, label: 'はがす',         caption: '一枚に見える絵も、前景と背景が重なってできている。',   ud: '題材',       sp: 'はがす'},
+  {n: 2, label: '前景をつくる',   caption: '前景は、図形記号と知覚チャンネルのかけ算。', ud: 'チャンネル', sp: '図形記号'},
+  {n: 3, label: '背景をえらぶ',   caption: '背景がかわると、位置の意味がかわる。',     ud: '座標系',     sp: 'つぎへ'},
+  {n: 4, label: 'かさねる',       caption: '背景に前景をかさねると、チャートになる。', ud: 'チャート',   sp: 'かさねる'},
+  {n: 5, label: '背景だけ替える', caption: 'データも図形もそのまま。背景だけ替える。', ud: 'データ',     sp: '背景を替える'}
+];
+const READY = SCENES.map(s => s.n);
+let scene = 1;
+const stepBtns = {};
+SCENES.forEach(s => {
+  const li = H('li', null, $('#steps')), b = H('button', {type: 'button'}, li);
+  H('b', {textContent: s.n}, b); H('span', {textContent: s.label}, b);
+  b.addEventListener('click', () => setScene(s.n));
+  stepBtns[s.n] = b;
+});
+function setScene(n, fromHash) {
+  if (!READY.includes(n)) return;
+  scene = n;
+  $$('[data-scene]').forEach(m => m.hidden = +m.dataset.scene !== n);
+  const s = SCENES.find(x => x.n === n), cap = $('#caption');
+  cap.replaceChildren(H('span', {className: 'no', textContent: n}), document.createTextNode(s.caption));
+  $('#kud').textContent = s.ud; $('#ksp').textContent = s.sp;
+  for (const k in stepBtns) { if (+k === n) stepBtns[k].setAttribute('aria-current', 'step'); else stepBtns[k].removeAttribute('aria-current'); }
+  hideTip();
+  if (n === 2 && st2.row === 5 && !raf2 && !reduce) { st2.t0 = performance.now(); raf2 = requestAnimationFrame(loop2); }
+  if (!fromHash) { try { history.replaceState(null, '', '#scene-' + n); } catch (e) { location.hash = 'scene-' + n; } }
+}
+function fromHash() { const m = /^#scene-(\d)$/.exec(location.hash); setScene(m && READY.includes(+m[1]) ? +m[1] : 1, true); }
+addEventListener('hashchange', fromHash);
+
+const SPACE = {1: () => toggle1(), 2: () => select2(st2.col + 1, st2.row), 3: () => setSys(st3.i + 1), 4: () => toggle4(), 5: () => toggle5()};
+const UPDOWN = {
+  1: () => setMode1(st1.mode === 'anime' ? 'chart' : 'anime'),
+  2: d => select2(st2.col, st2.row + d),
+  3: d => setSys(st3.i + d),
+  4: d => setRecipe(st4.i + d),
+  5: () => setDs(st5.ds === 'night' ? 'yogurt' : 'night')
+};
+addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const onRange = e.target instanceof HTMLInputElement && e.target.type === 'range';
+  const k = e.key;
+  if (k === ' ' || k === 'Spacebar') { e.preventDefault(); if (!e.repeat) SPACE[scene](); return; }
+  if (onRange) return;
+  if (k === 'ArrowRight' || k === 'ArrowLeft') {
+    e.preventDefault();
+    const i = READY.indexOf(scene) + (k === 'ArrowRight' ? 1 : -1);
+    if (i >= 0 && i < READY.length) setScene(READY[i]);
+  } else if (k === 'ArrowDown' || k === 'ArrowUp') {
+    e.preventDefault();
+    UPDOWN[scene](k === 'ArrowDown' ? 1 : -1);
+  }
+});
+/* Space on a focused button would also fire its click; swallow that so it only acts once. */
+addEventListener('keyup', e => { if ((e.key === ' ' || e.key === 'Spacebar') && e.target instanceof HTMLButtonElement) e.preventDefault(); });
+
+setMode1('anime'); LS1.K.set(0);
+select2(0, 0);
+setSys(0);
+setRecipe(0);
+setDs('night');
+fromHash();
+window.__app = {setScene, setMode1, K1: LS1.K, select2, E2, setSys, P3, setRecipe, K4: LS4.K, T5, setDs};
+
+})();
+</script>
+</body>
+</html>
