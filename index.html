@@ -904,7 +904,13 @@ function mk(g, m, x, y, s, o = {}) {
   if (m === 4) return vol(g, x, y, o.a || s * .5, {fill: o.rgb, shape: o.shape, ghost: o.ghost});
   const fill = o.fill || INK;
   if (m === 0) return S('circle', {cx: f1(x), cy: f1(y), r: f1(o.r || s * .2), fill: o.ghost ? 'none' : fill, stroke: o.ghost ? INK : (o.ring || 'none'), 'stroke-width': o.ghost ? 2 : 1, 'stroke-dasharray': o.ghost ? '3 3' : ''}, g);
-  if (m === 1) { const len = s * .85; return S('line', {x1: f1(x), y1: f1(y - len), x2: f1(x), y2: f1(y + len), stroke: fill, 'stroke-width': f1(o.w || s * .12), 'stroke-dasharray': o.ghost ? '5 5' : (o.dash || ''), 'stroke-linecap': (o.ghost || o.dash) ? 'butt' : 'round'}, g); }
+  if (m === 1) {
+    const len = s * .85, at = {fill: 'none', stroke: fill, 'stroke-width': f1(o.w || s * .12), 'stroke-dasharray': o.ghost ? '5 5' : (o.dash || ''), 'stroke-linecap': o.cap || ((o.ghost || o.dash) ? 'butt' : 'round'), 'stroke-linejoin': 'round'};
+    if (!o.form) return S('line', {x1: f1(x), y1: f1(y - len), x2: f1(x), y2: f1(y + len), ...at}, g);
+    const n = o.form === 1 ? 40 : 6, amp = s * .2, pts = [];   // form 1=波線 2=ジグザグ
+    for (let i = 0; i <= n; i++) { const t = i / n, dx = o.form === 1 ? Math.sin(t * Math.PI * 5) : (i === 0 || i === n ? 0 : (i % 2 ? 1 : -1)); pts.push(f1(x + amp * dx) + ',' + f1(y - len + 2 * len * t)); }
+    return S('polyline', {points: pts.join(' '), ...at}, g);
+  }
   const a = o.a || s * .6, at = {fill: o.ghost ? 'none' : fill, stroke: o.ghost ? INK : (o.ring || 'none'), 'stroke-width': o.ghost ? 2 : 1, 'stroke-dasharray': o.ghost ? '4 4' : ''};
   if (o.shape === 1) return S('circle', {cx: f1(x), cy: f1(y), r: f1(a), ...at}, g);
   if (o.shape === 2) return S('polygon', {points: `${f1(x)},${f1(y - a)} ${f1(x + a * 1.1)},${f1(y + a)} ${f1(x - a * 1.1)},${f1(y + a)}`, ...at}, g);
@@ -924,14 +930,18 @@ function pat(g, x, y, a, row, v, w, u = a) {   // u: 模様の大きさの基準
   else hatch(g, x, y, a, u * .3, 'h', w);
 }
 function tex(g, m, x, y, a, row, v) {
+  if (m === 1) {   // 線のテクスチャは、線そのものの点線・破線。密度は点の詰まりぐあい、種類は点線／破線／一点鎖線
+    const s = a / .62;
+    if (row === 0) mk(g, 1, x, y, s, {dash: `0.1 ${f1(s * lerp(.6, .16, v))}`, cap: 'round', w: s * .14});
+    else if (v === 0) mk(g, 1, x, y, s, {dash: `0.1 ${f1(s * .3)}`, cap: 'round', w: s * .14});
+    else mk(g, 1, x, y, s, {dash: v === 1 ? `${f1(s * .34)} ${f1(s * .2)}` : `${f1(s * .34)} ${f1(s * .14)} ${f1(s * .07)} ${f1(s * .14)}`, w: s * .12});
+    return;
+  }
   S('rect', {x: f1(x - a), y: f1(y - a), width: f1(2 * a), height: f1(2 * a), fill: m === 2 ? '#eef0f2' : 'var(--paper)', stroke: INK, 'stroke-width': 1.5}, g);
   const w = Math.max(1, a / 20);
   if (m === 0) {
     if (row === 0) DOTS.slice(0, Math.round(1 + v * 9)).forEach(p => S('circle', {cx: f1(x + p[0] * a * .8), cy: f1(y + p[1] * a * .8), r: f1(a * .1), fill: INK}, g));
     else DOTS.slice(1, 5).forEach(p => mk(g, 2, x + p[0] * a * .85, y + p[1] * a * .85, 0, {a: a * .15, shape: [1, 2, 0][v]}));
-  } else if (m === 1) {
-    if (row === 0) hatch(g, x, y, a, 2 * a / Math.round(2 + v * 10), 'v', w * 1.5);
-    else hatch(g, x, y, a, a * .42, ['d1', 'd2', 'h'][v], w * 1.5);
   } else pat(g, x, y, a, row, v, w);
 }
 
@@ -1054,7 +1064,7 @@ function demo(g, m, ch, e, time, Lo) {
     const g0 = S('g', {opacity: (1 - e).toFixed(3)}, g), g1 = S('g', {opacity: e.toFixed(3)}, g);
     xs.forEach((x, i) => {
       mk(g0, m, x, Lo.y1, s);
-      mk(g1, m, x, Lo.y1, s, m === 1 ? {dash: ['', `${f1(s * .3)} ${f1(s * .2)}`, `${f1(s * .08)} ${f1(s * .17)}`][c[i]]} : {shape: c[i]});
+      mk(g1, m, x, Lo.y1, s, m === 1 ? {form: c[i]} : {shape: c[i]});
       cap(x, Lo.y1 + s + 40, 'ABC'[c[i]]);
     });
     return;
