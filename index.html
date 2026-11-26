@@ -32,7 +32,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .app{height:100%;display:grid;grid-template-rows:auto minmax(0,1fr) auto}
 
 .top{display:flex;align-items:baseline;gap:1.4rem;padding:.85rem 1.6rem .7rem;border-bottom:1px solid var(--rule)}
-.brand{font-size:.85rem;font-weight:700;color:var(--ink-2);white-space:nowrap}
+.brand{font-size:.85rem;font-weight:700;color:var(--ink-2);white-space:nowrap;background:none;border:0;padding:0}
 .caption{margin:0;font-size:1.7rem;font-weight:800;line-height:1.25;text-wrap:balance}
 .caption .no{color:var(--accent);margin-right:.55em;font-variant-numeric:tabular-nums}
 
@@ -113,6 +113,29 @@ svg text{font-family:var(--font);fill:var(--ink)}
 .yl.hot{stroke:var(--pink);stroke-width:3;opacity:1}
 .yhit{fill:none;stroke:transparent;stroke-width:12;pointer-events:stroke}
 
+/* cover */
+.app.is-cover .top,.app.is-cover .foot{display:none}
+.app.is-cover{grid-template-rows:minmax(0,1fr)}
+.cover{position:relative;background:var(--navy);color:#fff;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);align-items:center;gap:2rem;padding:3rem 4.5rem;min-height:0}
+.cover .org{position:absolute;left:4.5rem;top:2.6rem;margin:0;font-size:.95rem;font-weight:700;letter-spacing:.05em;color:#c9cbe0}
+.cover h1{margin:0;font-size:4.4rem;font-weight:800;line-height:1.15;letter-spacing:.02em}
+.cover .eq{margin:1.1rem 0 2.6rem;font-size:1.5rem;font-weight:500;color:#c9cbe0}
+.cover .eq b{color:#fff;font-weight:800}
+.start{border:0;border-radius:2rem;background:#fff;color:var(--navy);font-size:1.15rem;font-weight:800;padding:.7rem 1.6rem;display:inline-flex;align-items:baseline;gap:.7rem}
+.start kbd{font:inherit;font-size:.7rem;font-weight:600;opacity:.6;border:1px solid currentColor;border-radius:.25rem;padding:.05rem .4rem}
+.start:focus-visible{outline-color:#fff}
+.cover .art svg{display:block;width:100%;height:auto;max-height:72vh}
+.cover .sheet{fill:rgba(255,255,255,.07);stroke:rgba(255,255,255,.45)}
+.cover [stroke="var(--ink)"]{stroke:#fff}
+.cover [fill="var(--ink)"]{fill:#fff}
+.cover [stroke="#b6bac3"]{stroke:rgba(255,255,255,.4)}
+.cover .cfg [fill="var(--ink)"]{fill:var(--pink)}
+.cover .float{animation:coverA 5s ease-in-out infinite alternate}
+.cover .float.b{animation-name:coverB}
+@keyframes coverA{from{transform:translateY(0)}to{transform:translateY(-14px)}}
+@keyframes coverB{from{transform:translateY(0)}to{transform:translateY(14px)}}
+@media (prefers-reduced-motion:reduce){.cover .float{animation:none}}
+
 /* scenes 1-3 */
 .t-sub{font-size:15px;fill:var(--ink-2)}
 .t-link{font-size:15px;font-weight:700;fill:var(--ink-2);text-decoration:underline;cursor:pointer}
@@ -154,6 +177,10 @@ svg text{font-family:var(--font);fill:var(--ink)}
   .svgbox{flex:none;aspect-ratio:1000/620}
   .foot{flex-direction:column;align-items:flex-start;padding:.6rem 1rem}
   .keys{display:none}
+  .cover{grid-template-columns:1fr;padding:4.8rem 1.4rem 2rem;min-height:100svh;align-content:center}
+  .cover .org{left:1.4rem;top:1.4rem}
+  .cover h1{font-size:2.7rem}
+  .cover .eq{font-size:1.15rem;margin-bottom:1.8rem}
   .drag{touch-action:auto;cursor:default}
 }
 </style>
@@ -161,17 +188,28 @@ svg text{font-family:var(--font);fill:var(--ink)}
 <body>
 <div class="app">
   <header class="top">
-    <span class="brand">チャートの文法</span>
+    <button class="brand" id="home" type="button" title="表紙へ">チャートの文法</button>
     <p class="caption" id="caption"></p>
   </header>
 
-  <!-- 場面1：はがす -->
-  <main class="main" data-scene="1">
+  <!-- 表紙 -->
+  <main class="cover" data-scene="0">
+    <p class="org">Visualizing.JP</p>
+    <div>
+      <h1>チャートの文法</h1>
+      <p class="eq"><b>背景</b> ＋ <b>前景</b> ＝ <b>チャート</b></p>
+      <button class="start" id="start" type="button">はじめる<kbd>Space</kbd></button>
+    </div>
+    <div class="art"><svg id="svg0" viewBox="0 50 660 420" role="img" aria-label="背景と前景、2枚のレイヤー"></svg></div>
+  </main>
+
+  <!-- 場面1：分ける -->
+  <main class="main" data-scene="1" hidden>
     <section class="stage" aria-label="ステージ">
       <div class="svgbox"><svg id="svg1" class="drag" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="重なった2枚のレイヤー"></svg></div>
     </section>
     <aside class="panel" id="panel1">
-      <button class="big" id="act1" type="button"><span id="act1label">はがす</span><kbd>Space</kbd></button>
+      <button class="big" id="act1" type="button"><span id="act1label">前景と背景に分ける</span><kbd>Space</kbd></button>
       <div class="seg pic" id="mode1">
         <button type="button" data-mode="anime" aria-pressed="true"><svg viewBox="-170 -170 340 340" aria-hidden="true"></svg>アニメ</button>
         <button type="button" data-mode="chart" aria-pressed="false"><svg viewBox="-170 -170 340 340" aria-hidden="true"></svg>チャート</button>
@@ -495,7 +533,7 @@ const RECIPES = [
   {fg: 'radar',   bg: 'polar', mark: '線',         name: 'レーダー・チャート'}
 ];
 
-/* 2枚のレイヤーを重ねたり、はがしたりするステージ（場面1と場面4で共用）。k=1 が、はがした状態。 */
+/* 2枚のレイヤーを重ねたり、分けたりするステージ（場面1と場面4で共用）。k=1 が、分けた状態。 */
 function layerStage(svg, onK, opt) {
   const CX = 360, CY = 310, HS = 165, LX = 690;
   const gBg = S('g', {class: 'layer'}, svg), gFg = S('g', {class: 'layer'}, svg);
@@ -519,7 +557,7 @@ function layerStage(svg, onK, opt) {
     gRes.setAttribute('opacity', c01(1 - k * 3).toFixed(3));
   }
   const K = tweener(k => { render(k); if (onK) onK(k); }, 1);
-  /* 上にドラッグするとはがれ、下にドラッグすると重なる */
+  /* 上にドラッグすると分かれ、下にドラッグすると重なる */
   let drag = null;
   const narrow = matchMedia('(max-width:760px)');
   svg.addEventListener('pointerdown', e => { if (narrow.matches && e.pointerType !== 'mouse') return; drag = {y: e.clientY, k: K.value, moved: false}; try { svg.setPointerCapture(e.pointerId); } catch (err) {} });
@@ -540,7 +578,7 @@ function layerStage(svg, onK, opt) {
 
 const st4 = {i: 0};
 const tileEls = [];
-const LS4 = layerStage($('#svg4'), k => { $('#act4label').textContent = k > .5 ? 'かさねる' : 'はがす'; });
+const LS4 = layerStage($('#svg4'), k => { $('#act4label').textContent = k > .5 ? 'かさねる' : '背景と前景に分ける'; });
 function setRecipe(i) {
   st4.i = (i + RECIPES.length) % RECIPES.length;
   const r = RECIPES[st4.i];
@@ -767,7 +805,7 @@ $$('#coord5 button').forEach(b => { drawBg(b.querySelector('svg').dataset.bg, b.
 scrub.addEventListener('input', () => T5.set(scrub.value / 1000));
 
 /* ==========================================================
-   場面1：はがす
+   場面1：分ける
    ========================================================== */
 const GREY = '#d9dce1';
 const ANIME = {
@@ -809,7 +847,7 @@ const lab1 = ['fg', 'bg'].map((key, i) => {
   return {g, sub};
 });
 const LS1 = layerStage($('#svg1'), k => {
-  $('#act1label').textContent = k > .5 ? 'かさねる' : 'はがす';
+  $('#act1label').textContent = k > .5 ? '1枚にかさねる' : '前景と背景に分ける';
   lab1[0].g.setAttribute('transform', `translate(${f1(lerp(566, 690, k))} ${f1(lerp(262, 190, k))})`);
   lab1[1].g.setAttribute('transform', `translate(${f1(lerp(566, 690, k))} ${f1(lerp(372, 414, k))})`);
 }, {plain: true});
@@ -1208,16 +1246,18 @@ $('#note3').textContent = `点は世界の${CITIES.length}都市。ピンクが$
    場面の切り替えとキー操作
    ========================================================== */
 const SCENES = [
-  {n: 1, label: 'はがす',         caption: '一枚に見える絵も、前景と背景が重なってできている。',   ud: '題材',       sp: 'はがす'},
+  {n: 0, label: '表紙',           caption: '', ud: '', sp: 'はじめる'},
+  {n: 1, label: '分ける',         caption: '一枚に見える絵も、前景と背景が重なってできている。',   ud: '題材',       sp: '分ける'},
   {n: 2, label: '前景をつくる',   caption: '前景は、図形記号と知覚チャンネルのかけ算。', ud: 'チャンネル', sp: '図形記号'},
   {n: 3, label: '背景をえらぶ',   caption: '背景がかわると、位置の意味がかわる。',     ud: '座標系',     sp: 'つぎへ'},
   {n: 4, label: 'かさねる',       caption: '背景に前景をかさねると、チャートになる。', ud: 'チャート',   sp: 'かさねる'},
   {n: 5, label: '背景だけ替える', caption: 'データも図形もそのまま。背景だけ替える。', ud: 'データ',     sp: '背景を替える'}
 ];
 const READY = SCENES.map(s => s.n);
-let scene = 1;
+let scene = 0;
 const stepBtns = {};
 SCENES.forEach(s => {
+  if (!s.n) return;
   const li = H('li', null, $('#steps')), b = H('button', {type: 'button'}, li);
   H('b', {textContent: s.n}, b); H('span', {textContent: s.label}, b);
   b.addEventListener('click', () => setScene(s.n));
@@ -1228,6 +1268,7 @@ function setScene(n, fromHash) {
   scene = n;
   $$('[data-scene]').forEach(m => m.hidden = +m.dataset.scene !== n);
   const s = SCENES.find(x => x.n === n), cap = $('#caption');
+  $('.app').classList.toggle('is-cover', n === 0);
   cap.replaceChildren(H('span', {className: 'no', textContent: n}), document.createTextNode(s.caption));
   $('#kud').textContent = s.ud; $('#ksp').textContent = s.sp;
   for (const k in stepBtns) { if (+k === n) stepBtns[k].setAttribute('aria-current', 'step'); else stepBtns[k].removeAttribute('aria-current'); }
@@ -1235,11 +1276,12 @@ function setScene(n, fromHash) {
   if (n === 2 && st2.row === 5 && !raf2 && !reduce) { st2.t0 = performance.now(); raf2 = requestAnimationFrame(loop2); }
   if (!fromHash) { try { history.replaceState(null, '', '#scene-' + n); } catch (e) { location.hash = 'scene-' + n; } }
 }
-function fromHash() { const m = /^#scene-(\d)$/.exec(location.hash); setScene(m && READY.includes(+m[1]) ? +m[1] : 1, true); }
+function fromHash() { const m = /^#scene-(\d)$/.exec(location.hash); setScene(m && READY.includes(+m[1]) ? +m[1] : 0, true); }
 addEventListener('hashchange', fromHash);
 
-const SPACE = {1: () => toggle1(), 2: () => select2(st2.col + 1, st2.row), 3: () => setSys(st3.i + 1), 4: () => toggle4(), 5: () => toggle5()};
+const SPACE = {0: () => setScene(1), 1: () => toggle1(), 2: () => select2(st2.col + 1, st2.row), 3: () => setSys(st3.i + 1), 4: () => toggle4(), 5: () => toggle5()};
 const UPDOWN = {
+  0: () => {},
   1: () => setMode1(st1.mode === 'anime' ? 'chart' : 'anime'),
   2: d => select2(st2.col, st2.row + d),
   3: d => setSys(st3.i + d),
@@ -1263,6 +1305,15 @@ addEventListener('keydown', e => {
 });
 /* Space on a focused button would also fire its click; swallow that so it only acts once. */
 addEventListener('keyup', e => { if ((e.key === ' ' || e.key === 'Spacebar') && e.target instanceof HTMLButtonElement) e.preventDefault(); });
+
+(function buildCover() {
+  const svg = $('#svg0');
+  const layer = (cy, cls) => { const f = S('g', {class: 'float' + cls}, svg), g = S('g', {transform: `matrix(1 0 -.72 .5 330 ${cy})`}, f); S('rect', {x: -165, y: -165, width: 330, height: 330, rx: 8, class: 'sheet'}, g); return g; };
+  drawBg('cart', layer(350, ' b'), false);
+  FG.scatter(S('g', {class: 'cfg'}, layer(170, '')), CO.cart);
+})();
+$('#start').addEventListener('click', () => setScene(1));
+$('#home').addEventListener('click', () => setScene(0));
 
 setMode1('anime'); LS1.K.set(0);
 select2(0, 0);
