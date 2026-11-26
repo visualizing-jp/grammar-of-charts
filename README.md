@@ -2,7 +2,7 @@
 
 「チャートは、背景（スペース変換）に前景（ビジュアル変換）を重ねたもの」という考え方を、触って確かめるための教材です。授業で投影して使うことを想定しています。
 
-公開ページ: https://visualizing-jp.github.io/grammar-of-charts/
+公開ページ: https://grammar-of-charts.visualizing.jp/
 
 ## 場面
 
