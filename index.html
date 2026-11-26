@@ -259,7 +259,7 @@ svg text{font-family:var(--font);fill:var(--ink)}
   <main class="main" data-scene="5" hidden>
     <section class="stage" aria-label="ステージ">
       <div class="stagehead"><h2 id="name5"></h2><p id="sub5"></p></div>
-      <div class="svgbox"><svg id="svg5" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="同じデータを直交座標系と極座標系で描く"></svg></div>
+      <div class="svgbox"><svg id="svg5" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="同じデータを、背景の座標系だけ替えて描く"></svg></div>
     </section>
     <aside class="panel" id="panel5">
       <div>
@@ -272,7 +272,7 @@ svg text{font-family:var(--font);fill:var(--ink)}
       <div>
         <h3>背景</h3>
         <div class="seg coord" id="coord5">
-          <button type="button" data-to="0" aria-pressed="true"><svg viewBox="-150 -150 300 300" data-bg="cart" aria-hidden="true"></svg>直交座標系<small>たて・よこ</small></button>
+          <button type="button" data-to="0" aria-pressed="true"><svg viewBox="-150 -150 300 300" aria-hidden="true"></svg><span id="bg5name">直交座標系</span><small id="bg5kana">たて・よこ</small></button>
           <button type="button" data-to="1" aria-pressed="false"><svg viewBox="-150 -150 300 300" data-bg="polar" aria-hidden="true"></svg>極座標系<small>むき・きょり</small></button>
         </div>
         <input type="range" id="scrub5" min="0" max="1000" value="0" aria-label="直交座標系から極座標系へ">
@@ -464,7 +464,7 @@ const CO = {
   para:  (u, v) => [-L + 2 * L * u, L - 2 * L * v],
   polar: (u, v) => [L * v * Math.sin(2 * Math.PI * u), -L * v * Math.cos(2 * Math.PI * u)]
 };
-const BGNAME = {cart: '直交座標系', polar: '極座標系', para: '平行座標'};
+const BGNAME = {cart: '直交座標系', polar: '極座標系', para: '平行座標系'};
 const INK = 'var(--ink)', SOFT = '#b6bac3';
 
 function head(g, x, y, a, s, col) {
@@ -623,7 +623,7 @@ $('#act4').addEventListener('click', toggle4);
 
 /* ==========================================================
    場面5：背景だけ替える
-   直交座標の横軸を曲げていき、最後に1点にたたむ。t=0 が直交、t=1 が極。
+   横軸を曲げていき、最後に1点にたたむ。t=0 が直交（ヨーグルトでは平行）、t=1 が極。
    ========================================================== */
 function bender(g, t) {
   const tt = Math.max(t, 1e-4), th = 2 * Math.PI * tt, rho = g.W * (1 - tt) / th;
@@ -710,6 +710,7 @@ const night = (() => {
   return {
     render,
     names: ['棒グラフ', '鶏冠チャート'],
+    bg0: {kind: 'cart', kana: 'たて・よこ'},
     sub: `クリミア戦争でのイギリス軍の月別死者数（${a[0]}年${a[1]}月〜${b[0]}年${b[1]}月）`,
     note: '3色とも根元から測る（積み上げない）。鶏冠チャートでは、半径ではなく面積が人数を表す。',
     legendTitle: '死因',
@@ -778,6 +779,7 @@ const yogurt = (() => {
   return {
     render,
     names: ['パラレル・コーディネイト', 'レーダー・チャート'],
+    bg0: {kind: 'para', kana: 'たて・たて'},      // パラレルの背景は、直交ではなく平行座標系
     sub: `コンビニで販売しているヨーグルトの栄養成分（1個あたり、${rows.length}商品）`,
     note: `軸はどれも 0〜${vmax}${YOGURT_UNIT}。線1本が1商品。`,
     legendTitle: 'メーカー',
@@ -812,6 +814,10 @@ function setDs(k) {
   gYog.setAttribute('visibility', k === 'yogurt' ? 'visible' : 'hidden');
   $$('#ds5 button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ds === k)));
   const d = DS[k];
+  const ic = $('#coord5 button svg');           // 切り替え前の背景は、データによって直交か平行か
+  ic.replaceChildren(); drawBg(d.bg0.kind, ic, true);
+  $('#bg5name').textContent = BGNAME[d.bg0.kind]; $('#bg5kana').textContent = d.bg0.kana;
+  scrub.setAttribute('aria-label', `${BGNAME[d.bg0.kind]}から極座標系へ`);
   $('#sub5').textContent = d.sub; $('#note5').textContent = d.note; $('#lg5title').textContent = d.legendTitle;
   const ul = $('#legend5'); ul.replaceChildren(); d.legend(ul);
   hideTip();
@@ -819,7 +825,7 @@ function setDs(k) {
 }
 function toggle5() { T5.to(T5.value > .5 ? 0 : 1, 2600); }
 $$('#ds5 button').forEach(b => b.addEventListener('click', () => setDs(b.dataset.ds)));
-$$('#coord5 button').forEach(b => { drawBg(b.querySelector('svg').dataset.bg, b.querySelector('svg'), true); b.addEventListener('click', () => T5.to(+b.dataset.to, 2600)); });
+$$('#coord5 button').forEach(b => { if (b.querySelector('svg').dataset.bg) drawBg(b.querySelector('svg').dataset.bg, b.querySelector('svg'), true); b.addEventListener('click', () => T5.to(+b.dataset.to, 2600)); });
 scrub.addEventListener('input', () => T5.set(scrub.value / 1000));
 
 /* ==========================================================
