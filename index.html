@@ -57,18 +57,16 @@ button{font:inherit;color:inherit;cursor:pointer}
 .tile[aria-pressed="true"]{border-color:var(--accent)}
 .tile[aria-pressed="true"] span{color:var(--ink);font-weight:700}
 
-/* the action tile: same square as the others, filled so it reads as the thing to press */
-.act{aspect-ratio:1;border:0;border-radius:.4rem;background:var(--navy);color:#fff;padding:.4rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.25rem;min-width:0;overflow:hidden;font-size:.8rem;font-weight:800;line-height:1.25;text-align:center}
-.act svg{flex:1 1 0;min-height:0;width:78%;display:block}
-.act span{text-wrap:balance}
-.act kbd{font:inherit;font-size:.6rem;font-weight:600;opacity:.7;border:1px solid currentColor;border-radius:.25rem;padding:0 .35rem}
-.act:hover{background:#2f3246}
+/* the action button: same box as a data-name button (half the panel wide), filled so it reads as the thing to press */
+.seg .act{border:2px solid var(--navy);border-radius:.4rem;background:var(--navy);color:#fff;padding:.5rem .3rem;font-size:.95rem;font-weight:700;line-height:1.4;display:flex;align-items:center;justify-content:center;gap:.3rem;white-space:nowrap;min-width:0}
+.seg .act svg{width:1.4em;height:1em;flex:none;display:block}
+.seg .act:hover{background:#2f3246;border-color:#2f3246}
 .big{border:0;border-radius:.5rem;background:var(--navy);color:#fff;font-size:1.35rem;font-weight:800;padding:.85rem 1rem;display:flex;justify-content:center;align-items:baseline;gap:.8rem}
 .big kbd{font:inherit;font-size:.7rem;font-weight:600;opacity:.7;border:1px solid currentColor;border-radius:.25rem;padding:.05rem .4rem}
 .big:hover{background:#2f3246}
 
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:.35rem}
-.seg button{border:2px solid transparent;background:var(--paper);border-radius:.4rem;padding:.5rem .4rem;font-size:.95rem;font-weight:700}
+.seg button{border:2px solid transparent;background:var(--paper);border-radius:.4rem;padding:.5rem .4rem;font-size:.95rem;font-weight:700;line-height:1.4}
 .seg button[aria-pressed="true"]{border-color:var(--accent)}
 .coord button{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.15rem;padding:.5rem .4rem .55rem;font-size:1.05rem;min-width:0;overflow:hidden}
 .coord button svg{flex:1 1 0;min-height:0;width:100%;max-width:62%}
@@ -213,8 +211,8 @@ svg text{font-family:var(--font);fill:var(--ink)}
       <div class="svgbox"><svg id="svg1" class="drag" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="重なった2枚のレイヤー"></svg></div>
     </section>
     <aside class="panel" id="panel1">
+      <div class="seg"><button class="act" id="act1" type="button"><svg viewBox="0 0 100 70" aria-hidden="true"></svg><span id="act1label">前景と背景に分ける</span></button></div>
       <div class="tiles" id="mode1">
-        <button class="act" id="act1" type="button"><svg viewBox="0 0 100 70" aria-hidden="true"></svg><span id="act1label">前景と背景に分ける</span><kbd>Space</kbd></button>
         <button class="tile" type="button" data-mode="anime" aria-pressed="true"><svg viewBox="-170 -170 340 340" aria-hidden="true"></svg><span>アニメ</span></button>
         <button class="tile" type="button" data-mode="chart" aria-pressed="false"><svg viewBox="-170 -170 340 340" aria-hidden="true"></svg><span>チャート</span></button>
       </div>
@@ -252,7 +250,7 @@ svg text{font-family:var(--font);fill:var(--ink)}
       <div class="svgbox"><svg id="svg4" class="drag" viewBox="0 0 1000 620" preserveAspectRatio="xMidYMid meet" role="img" aria-label="背景と前景のレイヤー"></svg></div>
     </section>
     <aside class="panel" id="panel4">
-      <div class="tiles"><button class="act" id="act4" type="button"><svg viewBox="0 0 100 70" aria-hidden="true"></svg><span id="act4label">かさねる</span><kbd>Space</kbd></button></div>
+      <div class="seg"><button class="act" id="act4" type="button"><svg viewBox="0 0 100 70" aria-hidden="true"></svg><span id="act4label">かさねる</span></button></div>
       <div id="tiles4"></div>
     </aside>
   </main>
