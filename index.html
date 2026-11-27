@@ -40,6 +40,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .stage{min-width:0;min-height:0;display:flex;flex-direction:column;padding:.7rem 1rem .5rem 1.6rem}
 .stagehead{display:flex;align-items:baseline;gap:1rem;flex-wrap:wrap;min-height:2.3rem}
 .stagehead h2{margin:0;font-size:1.45rem;font-weight:800}
+.stagehead h2 i{font-style:normal;font-weight:500;color:var(--ink-2);margin:0 .5em}
 .stagehead p{margin:0;font-size:.85rem;color:var(--ink-2)}
 .svgbox{flex:1;min-height:0;position:relative}
 .svgbox svg{position:absolute;inset:0;width:100%;height:100%;display:block}
@@ -255,7 +256,7 @@ svg text{font-family:var(--font);fill:var(--ink)}
     </aside>
   </main>
 
-  <!-- 場面5：背景だけ替える -->
+  <!-- 場面5：背景を替えると -->
   <main class="main" data-scene="5" hidden>
     <section class="stage" aria-label="ステージ">
       <div class="stagehead"><h2 id="name5"></h2><p id="sub5"></p></div>
@@ -622,7 +623,7 @@ function toggle4() { LS4.K.to(LS4.K.value > .5 ? 0 : 1, 1300); }
 $('#act4').addEventListener('click', toggle4);
 
 /* ==========================================================
-   場面5：背景だけ替える
+   場面5：背景を替えると（前景は同じまま、別のチャートになる）
    横軸を曲げていき、最後に1点にたたむ。t=0 が直交（ヨーグルトでは平行）、t=1 が極。
    ========================================================== */
 function bender(g, t) {
@@ -803,8 +804,10 @@ const T5 = tweener(t => {
   const d = DS[st5.ds];
   d.render(t);
   const nm = $('#name5');
-  nm.textContent = d.names[t < .5 ? 0 : 1];
-  nm.style.opacity = (.15 + .85 * Math.abs(2 * t - 1)).toFixed(3);
+  /* 2つのチャート名を並べ、いまの側を濃くする（背景を替えると別のチャートになる、を見せる） */
+  if (nm.dataset.ds !== st5.ds) { nm.dataset.ds = st5.ds; nm.replaceChildren(H('span', {textContent: d.names[0]}), H('i', {textContent: '→'}), H('span', {textContent: d.names[1]})); }
+  const w = c01((t - .35) / .3);
+  nm.children[0].style.opacity = (1 - .72 * w).toFixed(3); nm.children[2].style.opacity = (.28 + .72 * w).toFixed(3);
   scrub.value = Math.round(t * 1000);
   $$('#coord5 button').forEach(b => b.setAttribute('aria-pressed', String((t >= .5) === (b.dataset.to === '1'))));
 }, 0);
@@ -1285,7 +1288,7 @@ const SCENES = [
   {n: 2, label: '前景をつくる',   caption: '前景は、図形記号と知覚チャンネルのかけ算。', ud: 'チャンネル', sp: '図形記号'},
   {n: 3, label: '背景をえらぶ',   caption: '背景がかわると、位置の意味がかわる。',     ud: '座標系',     sp: 'つぎへ'},
   {n: 4, label: 'かさねる',       caption: '背景に前景をかさねると、チャートになる。', ud: 'チャート',   sp: 'かさねる'},
-  {n: 5, label: '背景だけ替える', caption: 'データも図形もそのまま。背景だけ替える。', ud: 'データ',     sp: '背景を替える'}
+  {n: 5, label: '背景を替えると', caption: '前景は同じでも、背景を替えると別のチャートになる。', ud: 'データ',     sp: '背景を替える'}
 ];
 const READY = SCENES.map(s => s.n);
 let scene = 0;
