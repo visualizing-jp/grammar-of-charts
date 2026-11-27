@@ -287,8 +287,8 @@ svg text{font-family:var(--font);fill:var(--ink)}
       <div>
         <h3>背景</h3>
         <div class="seg coord" id="coord5">
+          <button type="button" data-to="1" aria-pressed="true"><svg viewBox="-150 -150 300 300" data-bg="polar" aria-hidden="true"></svg>極座標系<small>むき・きょり</small></button>
           <button type="button" data-to="0" aria-pressed="true"><svg viewBox="-150 -150 300 300" aria-hidden="true"></svg><span id="bg5name">直交座標系</span><small id="bg5kana">たて・よこ</small></button>
-          <button type="button" data-to="1" aria-pressed="false"><svg viewBox="-150 -150 300 300" data-bg="polar" aria-hidden="true"></svg>極座標系<small>むき・きょり</small></button>
         </div>
         <input type="range" id="scrub5" min="0" max="1000" value="0" aria-label="直交座標系から極座標系へ">
       </div>
@@ -819,10 +819,10 @@ const T5 = tweener(t => {
   d.render(t);
   const nm = $('#name5');
   /* 2つのチャート名を並べ、いまの側を濃くする（背景を替えると別のチャートになる、を見せる） */
-  if (nm.dataset.ds !== st5.ds) { nm.dataset.ds = st5.ds; nm.replaceChildren(H('span', {textContent: d.names[0]}), H('i', {textContent: '→'}), H('span', {textContent: d.names[1]})); }
+  if (nm.dataset.ds !== st5.ds) { nm.dataset.ds = st5.ds; nm.replaceChildren(H('span', {textContent: d.names[1]}), H('i', {textContent: '→'}), H('span', {textContent: d.names[0]})); }   // はじめは極座標系の側
   const w = c01((t - .35) / .3);
-  nm.children[0].style.opacity = (1 - .72 * w).toFixed(3); nm.children[2].style.opacity = (.28 + .72 * w).toFixed(3);
-  scrub.value = Math.round(t * 1000);
+  nm.children[2].style.opacity = (1 - .72 * w).toFixed(3); nm.children[0].style.opacity = (.28 + .72 * w).toFixed(3);
+  scrub.value = Math.round((1 - t) * 1000);   // つまみの左端が、はじめの状態（極座標系）
   $$('#coord5 button').forEach(b => b.setAttribute('aria-pressed', String((t >= .5) === (b.dataset.to === '1'))));
 }, 0);
 function setDs(k) {
@@ -831,19 +831,19 @@ function setDs(k) {
   gYog.setAttribute('visibility', k === 'yogurt' ? 'visible' : 'hidden');
   $$('#ds5 button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ds === k)));
   const d = DS[k];
-  const ic = $('#coord5 button svg');           // 切り替え前の背景は、データによって直交か平行か
+  const ic = $('#coord5 [data-to="0"] svg');           // 切り替え前の背景は、データによって直交か平行か
   ic.replaceChildren(); drawBg(d.bg0.kind, ic, true);
   $('#bg5name').textContent = BGNAME[d.bg0.kind]; $('#bg5kana').textContent = d.bg0.kana;
-  scrub.setAttribute('aria-label', `${BGNAME[d.bg0.kind]}から極座標系へ`);
+  scrub.setAttribute('aria-label', `極座標系から${BGNAME[d.bg0.kind]}へ`);
   $('#sub5').textContent = d.sub; $('#note5').textContent = d.note; $('#lg5title').textContent = d.legendTitle;
   const ul = $('#legend5'); ul.replaceChildren(); d.legend(ul);
   hideTip();
-  T5.set(0);
+  T5.set(1);
 }
 function toggle5() { T5.to(T5.value > .5 ? 0 : 1, 2600); }
 $$('#ds5 button').forEach(b => b.addEventListener('click', () => setDs(b.dataset.ds)));
 $$('#coord5 button').forEach(b => { if (b.querySelector('svg').dataset.bg) drawBg(b.querySelector('svg').dataset.bg, b.querySelector('svg'), true); b.addEventListener('click', () => T5.to(+b.dataset.to, 2600)); });
-scrub.addEventListener('input', () => T5.set(scrub.value / 1000));
+scrub.addEventListener('input', () => T5.set(1 - scrub.value / 1000));
 
 /* ==========================================================
    場面1：分ける
