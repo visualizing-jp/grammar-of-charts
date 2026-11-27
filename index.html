@@ -1291,9 +1291,9 @@ const READY = SCENES.map(s => s.n);
 let scene = 0;
 const stepBtns = {};
 SCENES.forEach(s => {
-  if (!s.n) return;
   const li = H('li', null, $('#steps')), b = H('button', {type: 'button'}, li);
-  H('b', {textContent: s.n}, b); H('span', {textContent: s.label}, b);
+  if (s.n) H('b', {textContent: s.n}, b);
+  H('span', {textContent: s.label}, b);
   b.addEventListener('click', () => setScene(s.n));
   stepBtns[s.n] = b;
 });
