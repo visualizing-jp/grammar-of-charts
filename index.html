@@ -187,6 +187,20 @@ svg text{font-family:var(--font);fill:var(--ink)}
   .drag{touch-action:auto;cursor:default}
 }
 </style>
+<script>
+  // Count one page view per document on the canonical production host.
+  if (location.origin === "https://grammar-of-charts.visualizing.jp") {
+    window.dataLayer = window.dataLayer || [];
+    function queueAnalytics() { window.dataLayer.push(arguments); }
+    queueAnalytics("js", new Date());
+    queueAnalytics("config", "G-9HTGX19L31");
+
+    const tag = document.createElement("script");
+    tag.async = true;
+    tag.src = "https://www.googletagmanager.com/gtag/js?id=G-9HTGX19L31";
+    document.head.appendChild(tag);
+  }
+</script>
 </head>
 <body>
 <div class="app">
